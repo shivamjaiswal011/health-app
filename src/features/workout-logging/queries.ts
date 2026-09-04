@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, isNull, like, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
 
 import { database } from '@/db/client';
 import { exercises, sets, workoutExercises, workouts } from '@/db/schema';
@@ -59,29 +59,6 @@ export function workoutHistoryQuery() {
     .where(and(isNotNull(workouts.endedAt), isNull(workouts.deletedAt)))
     .orderBy(desc(workouts.startedAt))
     .limit(HISTORY_PAGE_SIZE);
-}
-
-/**
- * Catalogue search for the exercise picker. A LIKE scan is right at this size — the
- * catalogue is under a hundred rows. Food search in M4 needs FTS5; this does not.
- */
-export function exerciseSearchQuery(term: string) {
-  const trimmed = term.trim();
-  return database
-    .select({
-      id: exercises.id,
-      name: exercises.name,
-      primaryMuscle: exercises.primaryMuscle,
-      equipment: exercises.equipment,
-    })
-    .from(exercises)
-    .where(
-      and(
-        isNull(exercises.deletedAt),
-        trimmed.length > 0 ? like(exercises.name, `%${trimmed}%`) : undefined,
-      ),
-    )
-    .orderBy(asc(exercises.name));
 }
 
 export type PreviousSet = {

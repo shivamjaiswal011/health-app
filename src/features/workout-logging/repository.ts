@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
 
 import { database } from '@/db/client';
-import { logChange, withTimestamps } from '@/db/mutation';
+import { newId } from '@/db/id';
+import { logChange, withTimestamps, type Executor } from '@/db/mutation';
 import { sets, workoutExercises, workouts } from '@/db/schema';
 import type { SetType } from '@/db/schema';
 
@@ -13,12 +14,72 @@ export type NewWorkout = {
   id: string;
   name: string;
   startedAt: Date;
+  routineId?: string;
 };
 
 export async function startWorkout(workout: NewWorkout): Promise<void> {
   await database.transaction(async (tx) => {
     await tx.insert(workouts).values(withTimestamps(workout));
     await logChange(tx, { entityTable: WORKOUTS, entityId: workout.id, operation: 'insert' });
+  });
+}
+
+export type PlannedExercise = {
+  exerciseId: string;
+  targetSets: number;
+};
+
+type PlannedExercisePlacement = {
+  workoutId: string;
+  planned: PlannedExercise;
+  position: number;
+};
+
+async function insertPlannedExercise(tx: Executor, placement: PlannedExercisePlacement) {
+  const { workoutId, planned, position } = placement;
+  const entryId = newId();
+  await tx
+    .insert(workoutExercises)
+    .values(withTimestamps({ id: entryId, workoutId, exerciseId: planned.exerciseId, position }));
+  await logChange(tx, {
+    entityTable: WORKOUT_EXERCISES,
+    entityId: entryId,
+    operation: 'insert',
+  });
+
+  for (let slot = 0; slot < planned.targetSets; slot += 1) {
+    const setId = newId();
+    await tx.insert(sets).values(
+      withTimestamps({
+        id: setId,
+        workoutExerciseId: entryId,
+        exerciseId: planned.exerciseId,
+        position: slot,
+        setType: 'working' as const,
+      }),
+    );
+    await logChange(tx, { entityTable: SETS, entityId: setId, operation: 'insert' });
+  }
+}
+
+/**
+ * Starts a session pre-filled from a routine: the exercises in order, each with its
+ * target number of empty set rows ready to fill in.
+ *
+ * Written as one transaction rather than by composing the individual repository
+ * calls, so a failure part-way cannot leave a half-built session behind.
+ */
+export async function startPlannedWorkout(
+  workout: NewWorkout,
+  plan: PlannedExercise[],
+): Promise<void> {
+  await database.transaction(async (tx) => {
+    await tx.insert(workouts).values(withTimestamps(workout));
+    await logChange(tx, { entityTable: WORKOUTS, entityId: workout.id, operation: 'insert' });
+
+    for (const [position, planned] of plan.entries()) {
+      await insertPlannedExercise(tx, { workoutId: workout.id, planned, position });
+    }
   });
 }
 

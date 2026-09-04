@@ -17,7 +17,7 @@ vi.mock('@/db/client', async () => {
 });
 
 const { database } = await import('@/db/client');
-const { changeLog, exercises, sets } = await import('@/db/schema');
+const { changeLog, exercises, sets, workouts } = await import('@/db/schema');
 const { loadPreviousPerformance, workoutSetsQuery } = await import('./queries');
 const repository = await import('./repository');
 
@@ -142,6 +142,24 @@ describe('logging a session', () => {
 
     expect(await workoutSetsQuery('w1')).toHaveLength(1);
     expect(await database.select().from(sets).where(eq(sets.id, 'w1-set-0'))).toHaveLength(1);
+  });
+});
+
+describe('starting a planned workout', () => {
+  it('leaves no partial session behind when the plan cannot be written', async () => {
+    const plan = [
+      { exerciseId: SQUAT, targetSets: 2 },
+      { exerciseId: 'catalogue:does-not-exist', targetSets: 2 },
+    ];
+
+    await expect(
+      repository.startPlannedWorkout({ id: 'w1', name: 'Push', startedAt: new Date() }, plan),
+    ).rejects.toThrow();
+
+    // The workout row inserts before the failing exercise, so this only holds if the
+    // whole thing is one transaction.
+    expect(await database.select().from(workouts).where(eq(workouts.id, 'w1'))).toEqual([]);
+    expect(await workoutSetsQuery('w1')).toEqual([]);
   });
 });
 

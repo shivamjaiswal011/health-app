@@ -3,17 +3,25 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import { newId } from '@/db/id';
 import { ExercisePicker } from '@/features/exercise-catalogue/exercise-picker';
-import { workoutExercisesQuery } from '@/features/workout-logging/queries';
-import { addExerciseToWorkout } from '@/features/workout-logging/repository';
+import { routineExercisesQuery } from '@/features/routines/queries';
+import { addExerciseToRoutine } from '@/features/routines/repository';
 import { announceFailure } from '@/ui/failure';
 import { Screen } from '@/ui/screen';
 
-export default function AddExerciseToWorkoutScreen() {
-  const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
-  const entries = useLiveQuery(workoutExercisesQuery(workoutId));
+const DEFAULT_TARGET_SETS = 3;
+
+export default function AddExerciseToRoutineScreen() {
+  const { routineId } = useLocalSearchParams<{ routineId: string }>();
+  const entries = useLiveQuery(routineExercisesQuery(routineId));
 
   function handlePick(exerciseId: string) {
-    addExerciseToWorkout({ id: newId(), workoutId, exerciseId, position: entries.data.length })
+    addExerciseToRoutine({
+      id: newId(),
+      routineId,
+      exerciseId,
+      position: entries.data.length,
+      targetSets: DEFAULT_TARGET_SETS,
+    })
       .then(() => router.back())
       .catch((cause) => announceFailure('Adding the exercise', cause));
   }
