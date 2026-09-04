@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
 
 import { database } from '@/db/client';
 import { exercises, sets, workoutExercises, workouts } from '@/db/schema';
@@ -10,6 +10,14 @@ export function activeWorkoutQuery() {
     .from(workouts)
     .where(and(isNull(workouts.endedAt), isNull(workouts.deletedAt)))
     .orderBy(desc(workouts.startedAt))
+    .limit(1);
+}
+
+export function workoutQuery(workoutId: string) {
+  return database
+    .select({ id: workouts.id, name: workouts.name, startedAt: workouts.startedAt })
+    .from(workouts)
+    .where(and(eq(workouts.id, workoutId), isNull(workouts.deletedAt)))
     .limit(1);
 }
 
@@ -41,8 +49,39 @@ export function workoutSetsQuery(workoutId: string) {
     })
     .from(sets)
     .innerJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
-    .where(and(eq(workoutExercises.workoutId, workoutId), isNull(sets.deletedAt)))
+    .where(
+      and(
+        eq(workoutExercises.workoutId, workoutId),
+        isNull(sets.deletedAt),
+        // Removing an exercise tombstones only its own row, leaving its sets alive.
+        isNull(workoutExercises.deletedAt),
+      ),
+    )
     .orderBy(asc(sets.position));
+}
+
+export type WorkoutPlanEntry = {
+  exerciseId: string;
+  setCount: number;
+};
+
+/**
+ * The shape of a performed session, for saving it back as a routine: which exercises,
+ * in order, and how many sets each carried.
+ */
+export async function loadWorkoutPlan(workoutId: string): Promise<WorkoutPlanEntry[]> {
+  const rows = await database
+    .select({ exerciseId: workoutExercises.exerciseId, setCount: count(sets.id) })
+    .from(workoutExercises)
+    .leftJoin(
+      sets,
+      and(eq(sets.workoutExerciseId, workoutExercises.id), isNull(sets.deletedAt)),
+    )
+    .where(and(eq(workoutExercises.workoutId, workoutId), isNull(workoutExercises.deletedAt)))
+    .groupBy(workoutExercises.id)
+    .orderBy(asc(workoutExercises.position));
+
+  return rows.map((row) => ({ exerciseId: row.exerciseId, setCount: row.setCount }));
 }
 
 const HISTORY_PAGE_SIZE = 50;

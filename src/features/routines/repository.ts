@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 
 import { database } from '@/db/client';
+import { newId } from '@/db/id';
 import { logChange, withTimestamps } from '@/db/mutation';
 import { routineExercises, routines } from '@/db/schema';
 
@@ -17,6 +18,44 @@ export async function createRoutine(routine: NewRoutine): Promise<void> {
   await database.transaction(async (tx) => {
     await tx.insert(routines).values(withTimestamps(routine));
     await logChange(tx, { entityTable: ROUTINES, entityId: routine.id, operation: 'insert' });
+  });
+}
+
+export type PlannedRoutineExercise = {
+  exerciseId: string;
+  targetSets: number;
+};
+
+/**
+ * Creates a routine and its exercises together. One transaction because a routine that
+ * half-saved is worse than one that did not save at all — the user would find a
+ * plausible-looking routine missing exercises they thought they had captured.
+ */
+export async function createRoutineWithExercises(
+  routine: NewRoutine,
+  plan: PlannedRoutineExercise[],
+): Promise<void> {
+  await database.transaction(async (tx) => {
+    await tx.insert(routines).values(withTimestamps(routine));
+    await logChange(tx, { entityTable: ROUTINES, entityId: routine.id, operation: 'insert' });
+
+    for (const [position, planned] of plan.entries()) {
+      const entryId = newId();
+      await tx.insert(routineExercises).values(
+        withTimestamps({
+          id: entryId,
+          routineId: routine.id,
+          exerciseId: planned.exerciseId,
+          position,
+          targetSets: planned.targetSets,
+        }),
+      );
+      await logChange(tx, {
+        entityTable: ROUTINE_EXERCISES,
+        entityId: entryId,
+        operation: 'insert',
+      });
+    }
   });
 }
 

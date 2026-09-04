@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
-import type { SetValues } from '../repository';
-import type { PreviousSet } from '../queries';
 import { NumberInput } from '@/ui/number-input';
+import { useDebouncedCallback } from '@/ui/use-debounced-callback';
+
+import type { PreviousSet } from '../queries';
+import type { SetValues } from '../repository';
 
 const REMOVE_ACTION_WIDTH = 88;
+const EDIT_AUTOSAVE_DELAY_MS = 600;
 
 export type LoggedSet = {
   id: string;
@@ -22,6 +25,7 @@ type SetRowProps = {
   previous: PreviousSet | undefined;
   onComplete: (values: SetValues) => void;
   onUncomplete: () => void;
+  onEdit: (values: SetValues) => void;
   onRemove: () => void;
 };
 
@@ -44,10 +48,91 @@ function RemoveAction({ onRemove }: { onRemove: () => void }) {
   );
 }
 
-export function SetRow({ set, previous, onComplete, onUncomplete, onRemove }: SetRowProps) {
+function SetLabels({ position, previous }: { position: number; previous?: PreviousSet }) {
+  return (
+    <>
+      <Text className="w-6 text-center text-sm font-semibold text-content-muted">
+        {position + 1}
+      </Text>
+      <Text className="w-24 text-center text-xs text-content-faint">
+        {previousLabel(previous)}
+      </Text>
+    </>
+  );
+}
+
+type ValueFieldsProps = {
+  set: LoggedSet;
+  previous: PreviousSet | undefined;
+  onWeight: (value: number | null) => void;
+  onReps: (value: number | null) => void;
+};
+
+function ValueFields({ set, previous, onWeight, onReps }: ValueFieldsProps) {
+  return (
+    <>
+      <View className="flex-1">
+        <NumberInput
+          defaultValue={set.weightKg}
+          onChangeValue={onWeight}
+          placeholder={previous?.weightKg?.toString() ?? 'kg'}
+        />
+      </View>
+      <View className="flex-1">
+        <NumberInput
+          defaultValue={set.reps}
+          onChangeValue={onReps}
+          placeholder={previous?.reps?.toString() ?? 'reps'}
+        />
+      </View>
+    </>
+  );
+}
+
+type CompleteToggleProps = {
+  isComplete: boolean;
+  position: number;
+  onPress: () => void;
+};
+
+function CompleteToggle({ isComplete, position, onPress }: CompleteToggleProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: isComplete }}
+      accessibilityLabel={`Set ${position + 1}`}
+      className={`h-11 w-11 items-center justify-center rounded-lg ${isComplete ? 'bg-positive' : 'bg-surface-sunken'}`}>
+      <Ionicons name="checkmark" size={20} color={isComplete ? 'white' : 'rgb(113,113,122)'} />
+    </Pressable>
+  );
+}
+
+export function SetRow({
+  set,
+  previous,
+  onComplete,
+  onUncomplete,
+  onEdit,
+  onRemove,
+}: SetRowProps) {
   const [weightKg, setWeightKg] = useState(set.weightKg);
   const [reps, setReps] = useState(set.reps);
   const isComplete = set.completedAt !== null;
+
+  // A set already ticked off is history: corrections to it must persist on their own,
+  // without the lifter having to un-tick and re-tick the row.
+  const saveEdit = useDebouncedCallback(onEdit, EDIT_AUTOSAVE_DELAY_MS);
+
+  function handleWeight(next: number | null) {
+    setWeightKg(next);
+    if (isComplete) saveEdit({ weightKg: next, reps });
+  }
+
+  function handleReps(next: number | null) {
+    setReps(next);
+    if (isComplete) saveEdit({ weightKg, reps: next });
+  }
 
   function handleToggle() {
     if (isComplete) return onUncomplete();
@@ -60,38 +145,13 @@ export function SetRow({ set, previous, onComplete, onUncomplete, onRemove }: Se
       overshootRight={false}>
       <View
         className={`flex-row items-center gap-2 px-4 py-1.5 ${isComplete ? 'bg-positive/10' : 'bg-surface-raised'}`}>
-        <Text className="w-6 text-center text-sm font-semibold text-content-muted">
-          {set.position + 1}
-        </Text>
-        <Text className="w-24 text-center text-xs text-content-faint">
-          {previousLabel(previous)}
-        </Text>
-        <View className="flex-1">
-          <NumberInput
-            defaultValue={set.weightKg}
-            onChangeValue={setWeightKg}
-            placeholder={previous?.weightKg?.toString() ?? 'kg'}
-          />
-        </View>
-        <View className="flex-1">
-          <NumberInput
-            defaultValue={set.reps}
-            onChangeValue={setReps}
-            placeholder={previous?.reps?.toString() ?? 'reps'}
-          />
-        </View>
-        <Pressable
+        <SetLabels position={set.position} previous={previous} />
+        <ValueFields set={set} previous={previous} onWeight={handleWeight} onReps={handleReps} />
+        <CompleteToggle
+          isComplete={isComplete}
+          position={set.position}
           onPress={handleToggle}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: isComplete }}
-          accessibilityLabel={`Set ${set.position + 1}`}
-          className={`h-11 w-11 items-center justify-center rounded-lg ${isComplete ? 'bg-positive' : 'bg-surface-sunken'}`}>
-          <Ionicons
-            name="checkmark"
-            size={20}
-            color={isComplete ? 'white' : 'rgb(113,113,122)'}
-          />
-        </Pressable>
+        />
       </View>
     </ReanimatedSwipeable>
   );

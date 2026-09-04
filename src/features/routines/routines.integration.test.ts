@@ -18,7 +18,9 @@ const { workoutExercisesQuery, workoutSetsQuery } = await import(
 );
 const { routineExercisesQuery, routineListQuery } = await import('./queries');
 const { startWorkoutFromRoutine } = await import('./start-from-routine');
+const { saveWorkoutAsRoutine } = await import('./save-as-routine');
 const repository = await import('./repository');
+const workoutRepository = await import('@/features/workout-logging/repository');
 
 const MIGRATIONS_DIR = path.join(__dirname, '../../db/migrations');
 const STATEMENT_SEPARATOR = '--> statement-breakpoint';
@@ -127,6 +129,75 @@ describe('editing a routine', () => {
     await repository.deleteRoutine('r1');
 
     expect(await routineListQuery()).toEqual([]);
+  });
+});
+
+describe('saving a performed workout as a routine', () => {
+  async function logAdHocSession(workoutId: string, plan: [string, number][]) {
+    await workoutRepository.startWorkout({ id: workoutId, name: 'Ad hoc', startedAt: new Date() });
+    for (const [index, [exerciseId, setCount]] of plan.entries()) {
+      const entryId = `${workoutId}-e${index}`;
+      await workoutRepository.addExerciseToWorkout({
+        id: entryId,
+        workoutId,
+        exerciseId,
+        position: index,
+      });
+      for (let slot = 0; slot < setCount; slot += 1) {
+        await workoutRepository.addSet({
+          id: `${entryId}-s${slot}`,
+          workoutExerciseId: entryId,
+          exerciseId,
+          position: slot,
+          setType: 'working',
+        });
+      }
+    }
+  }
+
+  it('captures the exercises in the order they were performed', async () => {
+    await logAdHocSession('w1', [
+      [BENCH, 3],
+      [SQUAT, 4],
+    ]);
+
+    await saveWorkoutAsRoutine({ workoutId: 'w1', routineId: 'r1', name: 'Push A' });
+
+    const entries = await routineExercisesQuery('r1');
+    expect(entries.map((entry) => entry.name)).toEqual(['Bench Press', 'Back Squat']);
+  });
+
+  it('takes target sets from how many sets were actually logged', async () => {
+    await logAdHocSession('w1', [
+      [BENCH, 3],
+      [SQUAT, 5],
+    ]);
+
+    await saveWorkoutAsRoutine({ workoutId: 'w1', routineId: 'r1', name: 'Push A' });
+
+    const entries = await routineExercisesQuery('r1');
+    expect(entries.map((entry) => entry.targetSets)).toEqual([3, 5]);
+  });
+
+  it('leaves out an exercise removed during the session', async () => {
+    await logAdHocSession('w1', [
+      [BENCH, 3],
+      [SQUAT, 2],
+    ]);
+    await workoutRepository.removeWorkoutExercise('w1-e0');
+
+    await saveWorkoutAsRoutine({ workoutId: 'w1', routineId: 'r1', name: 'Push A' });
+
+    const entries = await routineExercisesQuery('r1');
+    expect(entries.map((entry) => entry.name)).toEqual(['Back Squat']);
+  });
+
+  it('refuses to save a session with no exercises', async () => {
+    await workoutRepository.startWorkout({ id: 'w1', name: 'Empty', startedAt: new Date() });
+
+    await expect(
+      saveWorkoutAsRoutine({ workoutId: 'w1', routineId: 'r1', name: 'Push A' }),
+    ).rejects.toThrow(/no exercises/);
   });
 });
 

@@ -97,7 +97,8 @@ export default function RoutineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const routine = useLiveQuery(routineQuery(id));
   const entries = useLiveQuery(routineExercisesQuery(id));
-  const name = routine.data[0]?.name ?? '';
+  const loaded = routine.data[0];
+  const name = loaded?.name ?? '';
 
   useDiscardIfUntouched(id, entries.data.length === 0 && name === DEFAULT_ROUTINE_NAME);
 
@@ -106,7 +107,9 @@ export default function RoutineScreen() {
       <ScreenHeader right={{ label: 'Done', onPress: () => router.back() }} />
       <Text className="px-5 pb-3 text-3xl font-bold text-content">{name || 'Routine'}</Text>
       <ScrollView contentContainerClassName="pb-8" keyboardShouldPersistTaps="handled">
-        <RoutineNameField routineId={id} name={name} />
+        {/* Mounted only once the name has loaded: the field seeds its own state, so
+            rendering it against an empty query result would strand it blank. */}
+        {loaded && <RoutineNameField routineId={id} name={name} />}
         <Text className="px-5 pb-4 pt-2 text-xs text-content-faint">
           Changes are saved as you make them.
         </Text>

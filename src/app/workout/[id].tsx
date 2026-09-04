@@ -2,10 +2,16 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, ScrollView, Text } from 'react-native';
 
+import { newId } from '@/db/id';
+import { saveWorkoutAsRoutine } from '@/features/routines/save-as-routine';
 import { ExerciseBlock } from '@/features/workout-logging/components/exercise-block';
 import { RestTimerBar } from '@/features/workout-logging/components/rest-timer-bar';
 import { groupSetsByExercise } from '@/features/workout-logging/group-sets';
-import { workoutExercisesQuery, workoutSetsQuery } from '@/features/workout-logging/queries';
+import {
+  workoutExercisesQuery,
+  workoutQuery,
+  workoutSetsQuery,
+} from '@/features/workout-logging/queries';
 import { discardWorkout, finishWorkout } from '@/features/workout-logging/repository';
 import { useRestTimer } from '@/features/workout-logging/rest-timer';
 import { announceFailure } from '@/ui/failure';
@@ -55,6 +61,28 @@ function WorkoutHeader({ workoutId }: { workoutId: string }) {
   );
 }
 
+/**
+ * Keeps a session that was built on the fly. Without this a lifter has to plan a
+ * routine before training in order to ever reuse the structure.
+ */
+function SaveAsRoutineAction({ workoutId }: { workoutId: string }) {
+  const workout = useLiveQuery(workoutQuery(workoutId));
+  const name = workout.data[0]?.name ?? 'Routine';
+
+  function handleSave() {
+    const routineId = newId();
+    saveWorkoutAsRoutine({ workoutId, routineId, name })
+      .then(() => router.push(`/routine/${routineId}`))
+      .catch((cause) => announceFailure('Saving as a routine', cause));
+  }
+
+  return (
+    <Pressable onPress={handleSave} className="items-center py-4 active:opacity-60">
+      <Text className="text-sm font-semibold text-accent">Save this workout as a routine</Text>
+    </Pressable>
+  );
+}
+
 export default function WorkoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const entries = useLiveQuery(workoutExercisesQuery(id));
@@ -78,6 +106,7 @@ export default function WorkoutScreen() {
             <Text className="text-sm font-semibold text-accent">+ Add exercise</Text>
           </Pressable>
         </Link>
+        {entries.data.length > 0 && <SaveAsRoutineAction workoutId={id} />}
       </ScrollView>
       <RestTimerBar />
     </Screen>

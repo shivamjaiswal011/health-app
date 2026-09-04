@@ -133,6 +133,15 @@ export async function completeSet(setId: string, values: SetValues): Promise<voi
   await updateSetRow(setId, { ...values, completedAt: new Date() });
 }
 
+/**
+ * Corrects what was lifted without touching whether the set is done. Editing an
+ * already-completed set has to persist — a lifter fixing a mistyped weight after
+ * ticking it off is normal, and losing that edit is silent data loss.
+ */
+export async function updateSetValues(setId: string, values: SetValues): Promise<void> {
+  await updateSetRow(setId, values);
+}
+
 /** Reverts a completion without discarding what was typed. */
 export async function uncompleteSet(setId: string): Promise<void> {
   await updateSetRow(setId, { completedAt: null });
