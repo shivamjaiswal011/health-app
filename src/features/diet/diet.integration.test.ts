@@ -14,7 +14,8 @@ vi.mock('@/db/client', async () => {
 const { database } = await import('@/db/client');
 const { changeLog, foodEntries, nutritionTargets } = await import('@/db/schema');
 const { dayEntriesQuery, targetForDayQuery } = await import('./queries');
-const { logFood, removeFoodEntry, updateLoggedPortion } = await import('./repository');
+const { copyDay, logAgain, logFood, removeFoodEntry, setNutritionTarget, updateLoggedPortion } =
+  await import('./repository');
 
 const MIGRATIONS_DIR = path.join(__dirname, '../../db/migrations');
 const STATEMENT_SEPARATOR = '--> statement-breakpoint';
@@ -120,6 +121,65 @@ describe('correcting an entry', () => {
   });
 });
 
+describe('repeating and copying', () => {
+  it('logs a recent food again with the same portion and macros', async () => {
+    await logFood(rotiEntry('e1', '2026-09-04'));
+    const [previous] = await dayEntriesQuery('2026-09-04');
+
+    await logAgain(
+      {
+        foodId: 'composed:roti',
+        foodSource: 'bundled',
+        foodNameAtLog: previous.foodNameAtLog,
+        portionLabel: previous.portionLabel,
+        portionCount: previous.portionCount,
+        gramsAtLog: previous.gramsAtLog,
+        kcal: previous.kcal,
+        protein: previous.protein,
+        carbs: previous.carbs,
+        fat: previous.fat,
+        fiber: null,
+      },
+      { day: '2026-09-05', slot: 'lunch', position: 0 },
+    );
+
+    const [repeated] = await dayEntriesQuery('2026-09-05');
+    expect(repeated).toMatchObject({ kcal: 119.6, gramsAtLog: 40, mealSlot: 'lunch' });
+  });
+
+  it('copies a whole day onto another, meals intact', async () => {
+    await logFood(rotiEntry('e1', '2026-09-04'));
+    await logFood({ ...rotiEntry('e2', '2026-09-04', { position: 1 }), mealSlot: 'dinner' });
+
+    await copyDay('2026-09-04', '2026-09-05');
+
+    const copied = await dayEntriesQuery('2026-09-05');
+    expect(copied).toHaveLength(2);
+    expect(copied.map((row) => row.mealSlot).sort()).toEqual(['breakfast', 'dinner']);
+  });
+
+  it('leaves the source day untouched when copying', async () => {
+    await logFood(rotiEntry('e1', '2026-09-04'));
+    await copyDay('2026-09-04', '2026-09-05');
+
+    expect(await dayEntriesQuery('2026-09-04')).toHaveLength(1);
+  });
+
+  it('does not copy an entry that was removed', async () => {
+    await logFood(rotiEntry('e1', '2026-09-04'));
+    await logFood(rotiEntry('e2', '2026-09-04', { position: 1 }));
+    await removeFoodEntry('e2');
+
+    await copyDay('2026-09-04', '2026-09-05');
+
+    expect(await dayEntriesQuery('2026-09-05')).toHaveLength(1);
+  });
+
+  it('refuses to copy a day with nothing on it', async () => {
+    await expect(copyDay('2026-09-01', '2026-09-05')).rejects.toThrow(/nothing logged/);
+  });
+});
+
 describe('nutrition targets', () => {
   async function setTarget(effectiveFrom: string, kcal: number) {
     const now = new Date();
@@ -154,5 +214,29 @@ describe('nutrition targets', () => {
     await setTarget('2026-09-10', 2500);
 
     expect(await targetForDayQuery('2026-09-04')).toEqual([]);
+  });
+
+  it('retires the previous target when one is set for the same day', async () => {
+    await setNutritionTarget({
+      id: 't1',
+      effectiveFrom: '2026-09-04',
+      kcal: 2000,
+      proteinGrams: 140,
+      carbsGrams: 200,
+      fatGrams: 60,
+    });
+    await setNutritionTarget({
+      id: 't2',
+      effectiveFrom: '2026-09-04',
+      kcal: 2400,
+      proteinGrams: 160,
+      carbsGrams: 260,
+      fatGrams: 70,
+    });
+
+    // Exactly one target applies, rather than the answer depending on insertion order.
+    const applying = await targetForDayQuery('2026-09-04');
+    expect(applying).toHaveLength(1);
+    expect(applying[0].kcal).toBe(2400);
   });
 });

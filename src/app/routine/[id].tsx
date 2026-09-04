@@ -42,6 +42,7 @@ function RoutineNameField({ routineId, name }: { routineId: string; name: string
       value={field.value}
       onChangeText={field.onChangeText}
       placeholder="Routine name"
+      autoCorrect={false}
       className="mx-5 h-12 rounded-xl bg-surface-sunken px-4 text-lg font-semibold text-content"
     />
   );

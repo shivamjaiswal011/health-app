@@ -1,31 +1,28 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { newId } from '@/db/id';
-import type { MealSlot } from '@/db/schema';
 import { macrosForGrams, type LoggedMacros } from '@/domain/nutrition/macros';
-import { logFood } from '@/features/diet/repository';
+import { customFoodPortionsQuery } from '@/features/custom-foods/repository';
 import { Button } from '@/ui/button';
-import { announceFailure, reportFailure } from '@/ui/failure';
+import { reportFailure } from '@/ui/failure';
 import { NumberInput } from '@/ui/number-input';
 import { Sheet } from '@/ui/sheet';
 
-import {
-  loadPortions,
-  toPerHundredGrams,
-  type FoodHit,
-  type FoodPortionOption,
-} from './queries';
+import { loadPortions, toPerHundredGrams, type FoodHit, type FoodPortionOption } from './queries';
 
 /** Always offered last, so a food with no household measures is still loggable. */
 const GRAMS_OPTION: FoodPortionOption = { label: 'grams', grams: 1, isDefault: false };
 const DEFAULT_COUNT = 1;
 
-export type LogTarget = {
-  day: string;
-  slot: MealSlot;
-  position: number;
+/** What the user settled on. The sheet decides the amount; the caller decides what
+ *  to do with it — log it against a day, or add it to a recipe. */
+export type ChosenPortion = {
+  food: FoodHit;
+  portionLabel: string | null;
+  portionCount: number;
+  grams: number;
+  macros: LoggedMacros;
 };
 
 function PortionChoice({
@@ -57,14 +54,26 @@ function MacroPreview({ grams, macros }: { grams: number; macros: LoggedMacros }
   );
 }
 
-function useFoodPortions(foodId: string | undefined): FoodPortionOption[] {
-  const foods = useSQLiteContext();
+async function portionsFor(bundled: SQLiteDatabase, food: FoodHit): Promise<FoodPortionOption[]> {
+  if (food.source === 'recipe') {
+    const grams = food.servingGrams ?? 0;
+    return grams > 0 ? [{ label: '1 serving', grams, isDefault: true }] : [];
+  }
+  if (food.source === 'custom') {
+    const rows = await customFoodPortionsQuery(food.id);
+    return rows.map((row) => ({ label: row.label, grams: row.grams, isDefault: true }));
+  }
+  return loadPortions(bundled, food.id);
+}
+
+function useFoodPortions(food: FoodHit | null): FoodPortionOption[] {
+  const bundled = useSQLiteContext();
   const [portions, setPortions] = useState<FoodPortionOption[]>([]);
 
   useEffect(() => {
-    if (!foodId) return;
+    if (!food) return;
     let abandoned = false;
-    loadPortions(foods, foodId)
+    portionsFor(bundled, food)
       .then((loaded) => {
         if (!abandoned) setPortions([...loaded, GRAMS_OPTION]);
       })
@@ -72,7 +81,7 @@ function useFoodPortions(foodId: string | undefined): FoodPortionOption[] {
     return () => {
       abandoned = true;
     };
-  }, [foods, foodId]);
+  }, [bundled, food]);
 
   return portions;
 }
@@ -80,11 +89,11 @@ function useFoodPortions(foodId: string | undefined): FoodPortionOption[] {
 type PortionFormProps = {
   food: FoodHit;
   portions: FoodPortionOption[];
-  target: LogTarget;
-  onLogged: () => void;
+  confirmLabel: string;
+  onConfirm: (chosen: ChosenPortion) => void;
 };
 
-function PortionForm({ food, portions, target, onLogged }: PortionFormProps) {
+function PortionForm({ food, portions, confirmLabel, onConfirm }: PortionFormProps) {
   const [chosen, setChosen] = useState<FoodPortionOption | null>(null);
   const [count, setCount] = useState<number | null>(DEFAULT_COUNT);
 
@@ -92,22 +101,14 @@ function PortionForm({ food, portions, target, onLogged }: PortionFormProps) {
   const grams = (count ?? 0) * portion.grams;
   const macros = macrosForGrams(toPerHundredGrams(food), grams);
 
-  function handleLog() {
-    logFood({
-      id: newId(),
-      loggedOn: target.day,
-      mealSlot: target.slot,
-      position: target.position,
-      foodId: food.id,
-      foodSource: 'bundled',
-      foodNameAtLog: food.name,
+  function handleConfirm() {
+    onConfirm({
+      food,
       portionLabel: portion === GRAMS_OPTION ? null : portion.label,
       portionCount: count ?? 0,
-      gramsAtLog: grams,
+      grams,
       macros,
-    })
-      .then(onLogged)
-      .catch((cause) => announceFailure('Logging the food', cause));
+    });
   }
 
   return (
@@ -131,21 +132,23 @@ function PortionForm({ food, portions, target, onLogged }: PortionFormProps) {
         </ScrollView>
       </View>
       <MacroPreview grams={grams} macros={macros} />
-      <Button label="Log food" onPress={handleLog} disabled={grams <= 0} />
+      <Button label={confirmLabel} onPress={handleConfirm} disabled={grams <= 0} />
     </>
   );
 }
 
 export function PortionSheet({
   food,
-  target,
+  confirmLabel,
+  onConfirm,
   onDismiss,
 }: {
   food: FoodHit | null;
-  target: LogTarget;
+  confirmLabel: string;
+  onConfirm: (chosen: ChosenPortion) => void;
   onDismiss: () => void;
 }) {
-  const portions = useFoodPortions(food?.id);
+  const portions = useFoodPortions(food);
 
   return (
     <Sheet visible={food !== null} onDismiss={onDismiss} title={food?.name}>
@@ -156,8 +159,8 @@ export function PortionSheet({
           key={food.id}
           food={food}
           portions={portions}
-          target={target}
-          onLogged={onDismiss}
+          confirmLabel={confirmLabel}
+          onConfirm={onConfirm}
         />
       ) : null}
     </Sheet>

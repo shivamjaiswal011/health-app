@@ -1,3 +1,5 @@
+import { toOneDecimal as round } from './rounding';
+
 const GRAMS_PER_100G = 100;
 
 export type Macros = {
@@ -17,13 +19,7 @@ export type LoggedMacros = Macros & {
 
 export const NO_MACROS: Macros = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
 
-/** One decimal. The underlying composition is an estimate; more digits imply
- *  precision that is not there. */
-const ROUNDING_STEPS_PER_UNIT = 10;
 
-function round(value: number): number {
-  return Math.round(value * ROUNDING_STEPS_PER_UNIT) / ROUNDING_STEPS_PER_UNIT;
-}
 
 /**
  * What a given weight of a food contributes. Rounded to one decimal because the

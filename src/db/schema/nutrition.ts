@@ -69,6 +69,17 @@ export const recipeItems = sqliteTable(
     foodName: text('food_name').notNull(),
     grams: real('grams').notNull(),
     position: integer('position').notNull(),
+    /**
+     * The ingredient's contribution, snapshotted when it was added. Ingredients span
+     * two databases — bundled foods and the user's own — so totals cannot be summed in
+     * SQL from a reference alone. Storing them also means editing a custom food later
+     * cannot silently restate a recipe the user already trusts.
+     */
+    kcalAtAdd: real('kcal_at_add').notNull().default(0),
+    proteinAtAdd: real('protein_at_add').notNull().default(0),
+    carbsAtAdd: real('carbs_at_add').notNull().default(0),
+    fatAtAdd: real('fat_at_add').notNull().default(0),
+    fiberAtAdd: real('fiber_at_add'),
   },
   (table) => [index('idx_recipe_items_recipe').on(table.recipeId, table.position)],
 );

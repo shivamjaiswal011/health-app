@@ -4,10 +4,16 @@ import type { PerHundredGrams } from '@/domain/nutrition/macros';
 
 const SEARCH_LIMIT = 60;
 
+/** `custom` foods and `recipe` entries live in the user's own database, the rest in
+ *  the bundled one. */
+export type FoodHitSource = 'usda' | 'composed' | 'custom' | 'recipe';
+
 export type FoodHit = {
   id: string;
   name: string;
-  source: 'usda' | 'composed';
+  source: FoodHitSource;
+  /** Recipes are logged by the serving, so they carry what one serving weighs. */
+  servingGrams?: number;
   kcalPer100g: number;
   proteinPer100g: number;
   carbsPer100g: number;
