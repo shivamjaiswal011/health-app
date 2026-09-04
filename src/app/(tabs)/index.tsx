@@ -5,6 +5,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { today } from '@/domain/nutrition/calendar-day';
 import { sumMacros } from '@/domain/nutrition/macros';
 import { dayEntriesQuery, targetForDayQuery } from '@/features/diet/queries';
+import { InsightList } from '@/features/insights/components/insight-card';
+import { useInsights } from '@/features/insights/use-insights';
 import { bodyWeightQuery, weeklyVolumeQuery } from '@/features/progress/queries';
 import { activeWorkoutQuery, workoutHistoryQuery } from '@/features/workout-logging/queries';
 import { Screen } from '@/ui/screen';
@@ -97,6 +99,7 @@ function tiles(summary: DaySummary): Record<string, TileContent> {
 export default function TodayScreen() {
   const active = useLiveQuery(activeWorkoutQuery());
   const summary = useTodaySummary();
+  const insights = useInsights();
   const tile = tiles(summary);
   const inProgress = active.data[0];
 
@@ -118,6 +121,14 @@ export default function TodayScreen() {
           />
           <SummaryTile label="Weight" {...tile.weight} onPress={() => router.push('/progress')} />
         </View>
+
+        <InsightList insights={insights} />
+
+        <Pressable
+          onPress={() => router.push('/settings')}
+          className="items-center py-2 active:opacity-60">
+          <Text className="text-sm font-semibold text-accent">Settings</Text>
+        </Pressable>
 
         <Pressable
           onPress={() => router.push('/workouts')}

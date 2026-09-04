@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNotNull, isNull, sql } from 'drizzle-orm';
 
 import { database } from '@/db/client';
 import { bodyMetrics, exercises, foodEntries, sets, workoutExercises, workouts } from '@/db/schema';
@@ -80,6 +80,39 @@ export function dailyEnergyQuery() {
     .where(isNull(foodEntries.deletedAt))
     .groupBy(foodEntries.loggedOn)
     .orderBy(asc(foodEntries.loggedOn));
+}
+
+/**
+ * Completed sets since a cut-off, with the exercise they belong to.
+ *
+ * Deliberately returns rows rather than computing estimated one-rep max in SQL: the
+ * formula belongs in the domain where it is tested, and duplicating it here would let
+ * the chart and the insight rules quietly disagree.
+ */
+export function recentCompletedSetsQuery(since: Date) {
+  return database
+    .select({
+      exerciseId: exercises.id,
+      name: exercises.name,
+      primaryMuscle: exercises.primaryMuscle,
+      completedAt: sets.completedAt,
+      weightKg: sets.weightKg,
+      reps: sets.reps,
+    })
+    .from(sets)
+    .innerJoin(exercises, eq(sets.exerciseId, exercises.id))
+    .innerJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
+    .innerJoin(workouts, eq(workoutExercises.workoutId, workouts.id))
+    .where(
+      and(
+        isNotNull(sets.completedAt),
+        gte(sets.completedAt, since),
+        isNull(sets.deletedAt),
+        isNull(workoutExercises.deletedAt),
+        isNull(workouts.deletedAt),
+      ),
+    )
+    .orderBy(asc(sets.completedAt));
 }
 
 /** Exercises the user has actually trained, for the progress picker. */

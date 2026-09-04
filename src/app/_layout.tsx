@@ -1,19 +1,20 @@
-import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
-import { Stack } from 'expo-router';
-import { SQLiteProvider } from 'expo-sqlite';
-import * as SplashScreen from 'expo-splash-screen';
-import type { ReactNode } from 'react';
-import { useEffect } from 'react';
-import { Text, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
+import { Stack } from "expo-router";
+import { SQLiteProvider } from "expo-sqlite";
+import * as SplashScreen from "expo-splash-screen";
+import type { ReactNode } from "react";
+import { useEffect } from "react";
+import { Text, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { database } from '@/db/client';
-import migrations from '@/db/migrations/migrations';
-import { useCatalogueSeed } from '@/db/seed/use-catalogue-seed';
+import { database } from "@/db/client";
+import { ErrorBoundary } from "@/ui/error-boundary";
+import migrations from "@/db/migrations/migrations";
+import { useCatalogueSeed } from "@/db/seed/use-catalogue-seed";
 
-import '../global.css';
+import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,7 +24,9 @@ function MigrationFailure({ message }: { message: string }) {
       <Text className="text-center text-base font-semibold text-danger">
         Could not prepare the database
       </Text>
-      <Text className="mt-2 text-center text-sm text-content-muted">{message}</Text>
+      <Text className="mt-2 text-center text-sm text-content-muted">
+        {message}
+      </Text>
     </View>
   );
 }
@@ -50,19 +53,22 @@ function MigrationGate({ children }: { children: ReactNode }) {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <KeyboardProvider>
-          <MigrationGate>
-            {/* Read-only, shipped in the binary and copied out on first launch.
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <KeyboardProvider>
+            <MigrationGate>
+              {/* Read-only, shipped in the binary and copied out on first launch.
                 Versioned in the filename so a rebuilt database replaces the copy. */}
-            <SQLiteProvider
-              databaseName="foods-v1.db"
-              assetSource={{ assetId: require('../../assets/foods.db') }}>
-              <Stack screenOptions={{ headerShown: false }} />
-            </SQLiteProvider>
-          </MigrationGate>
-        </KeyboardProvider>
-      </SafeAreaProvider>
+              <SQLiteProvider
+                databaseName="foods-v1.db"
+                assetSource={{ assetId: require("../../assets/foods.db") }}
+              >
+                <Stack screenOptions={{ headerShown: false }} />
+              </SQLiteProvider>
+            </MigrationGate>
+          </KeyboardProvider>
+        </SafeAreaProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }
