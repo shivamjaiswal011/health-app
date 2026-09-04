@@ -68,7 +68,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:food": "node --max-old-space-size=6144 scripts/build-food-db/build.mts"
   },
   "private": true,
   "allowScripts": {
