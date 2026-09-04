@@ -1,5 +1,6 @@
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { Stack } from 'expo-router';
+import { SQLiteProvider } from 'expo-sqlite';
 import * as SplashScreen from 'expo-splash-screen';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
@@ -52,7 +53,13 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <KeyboardProvider>
           <MigrationGate>
-            <Stack screenOptions={{ headerShown: false }} />
+            {/* Read-only, shipped in the binary and copied out on first launch.
+                Versioned in the filename so a rebuilt database replaces the copy. */}
+            <SQLiteProvider
+              databaseName="foods-v1.db"
+              assetSource={{ assetId: require('../../assets/foods.db') }}>
+              <Stack screenOptions={{ headerShown: false }} />
+            </SQLiteProvider>
           </MigrationGate>
         </KeyboardProvider>
       </SafeAreaProvider>
