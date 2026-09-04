@@ -1,5 +1,5 @@
-import { newId } from './id';
 import type { Database } from './client';
+import { newId } from './id';
 import { changeLog, type ChangeOperation } from './schema';
 
 /**
@@ -9,16 +9,21 @@ import { changeLog, type ChangeOperation } from './schema';
  */
 export type Executor = Pick<Database, 'insert'>;
 
-export type NewRowColumns = {
-  id: string;
+export type Timestamps = {
   createdAt: Date;
   updatedAt: Date;
 };
 
-/** Stamps the identity and timestamps every user-owned row is required to carry. */
-export function newRow<T extends object>(values: T): T & NewRowColumns {
+/**
+ * Stamps the timestamps every user-owned row is required to carry.
+ *
+ * Ids are supplied by the caller rather than generated here: a repository function
+ * that both writes a row and returns its new id would be a command and a query at
+ * once, and callers need the id before the write to build related rows anyway.
+ */
+export function withTimestamps<T extends object>(values: T): T & Timestamps {
   const now = new Date();
-  return { ...values, id: newId(), createdAt: now, updatedAt: now };
+  return { ...values, createdAt: now, updatedAt: now };
 }
 
 type ChangeRecord = {

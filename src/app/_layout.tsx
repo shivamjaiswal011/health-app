@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { Text, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -47,12 +48,14 @@ function MigrationGate({ children }: { children: ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <KeyboardProvider>
-        <MigrationGate>
-          <Stack screenOptions={{ headerShown: false }} />
-        </MigrationGate>
-      </KeyboardProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <KeyboardProvider>
+          <MigrationGate>
+            <Stack screenOptions={{ headerShown: false }} />
+          </MigrationGate>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
