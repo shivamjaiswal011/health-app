@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { database } from '@/db/client';
 import migrations from '@/db/migrations/migrations';
+import { useCatalogueSeed } from '@/db/seed/use-catalogue-seed';
 
 import '../global.css';
 
@@ -31,13 +32,16 @@ function MigrationFailure({ message }: { message: string }) {
  */
 function MigrationGate({ children }: { children: ReactNode }) {
   const { success, error } = useMigrations(database, migrations);
+  const seed = useCatalogueSeed(success);
+  const ready = success && seed.seeded;
+  const failure = error ?? seed.error;
 
   useEffect(() => {
-    if (success || error) SplashScreen.hideAsync();
-  }, [success, error]);
+    if (ready || failure) SplashScreen.hideAsync();
+  }, [ready, failure]);
 
-  if (error) return <MigrationFailure message={error.message} />;
-  if (!success) return <View className="flex-1 bg-surface" />;
+  if (failure) return <MigrationFailure message={failure.message} />;
+  if (!ready) return <View className="flex-1 bg-surface" />;
   return <>{children}</>;
 }
 

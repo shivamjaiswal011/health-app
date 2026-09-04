@@ -1,5 +1,7 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
+import { PERSONAL_RECORD_KINDS } from '@/domain/training/personal-records';
+
 import { syncColumns } from './shared';
 
 export const MUSCLE_GROUPS = [
@@ -28,6 +30,7 @@ export const EQUIPMENT_TYPES = [
   'band',
   'other',
 ] as const;
+export type EquipmentType = (typeof EQUIPMENT_TYPES)[number];
 
 /**
  * How a set of this exercise is measured. Drives which inputs the logger shows —
@@ -153,9 +156,6 @@ export const sets = sqliteTable(
   ],
 );
 
-export const RECORD_TYPES = ['heaviest_weight', 'best_estimated_1rm', 'best_session_volume'] as const;
-export type RecordType = (typeof RECORD_TYPES)[number];
-
 /** Denormalised so the dashboard never recomputes PRs across all history on open. */
 export const personalRecords = sqliteTable(
   'personal_records',
@@ -164,7 +164,7 @@ export const personalRecords = sqliteTable(
     exerciseId: text('exercise_id')
       .notNull()
       .references(() => exercises.id),
-    recordType: text('record_type', { enum: RECORD_TYPES }).notNull(),
+    recordType: text('record_type', { enum: PERSONAL_RECORD_KINDS }).notNull(),
     value: real('value').notNull(),
     achievedAt: integer('achieved_at', { mode: 'timestamp_ms' }).notNull(),
     setId: text('set_id').references(() => sets.id),
