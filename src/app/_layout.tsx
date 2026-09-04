@@ -1,18 +1,54 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import type { ReactNode } from 'react';
+import { useEffect } from 'react';
+import { Text, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { database } from '@/db/client';
+import migrations from '@/db/migrations/migrations';
+
+import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+function MigrationFailure({ message }: { message: string }) {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <View className="flex-1 items-center justify-center bg-surface px-8">
+      <Text className="text-center text-base font-semibold text-danger">
+        Could not prepare the database
+      </Text>
+      <Text className="mt-2 text-center text-sm text-content-muted">{message}</Text>
+    </View>
+  );
+}
+
+/**
+ * Holds the UI until the schema is current. Rendering screens against a stale database
+ * is worse than a brief hold — every query below assumes the migration ran.
+ */
+function MigrationGate({ children }: { children: ReactNode }) {
+  const { success, error } = useMigrations(database, migrations);
+
+  useEffect(() => {
+    if (success || error) SplashScreen.hideAsync();
+  }, [success, error]);
+
+  if (error) return <MigrationFailure message={error.message} />;
+  if (!success) return <View className="flex-1 bg-surface" />;
+  return <>{children}</>;
+}
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <KeyboardProvider>
+        <MigrationGate>
+          <Stack screenOptions={{ headerShown: false }} />
+        </MigrationGate>
+      </KeyboardProvider>
+    </SafeAreaProvider>
   );
 }

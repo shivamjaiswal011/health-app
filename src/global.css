@@ -1,9 +1,39 @@
-:root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Palette is defined as raw RGB channels so Tailwind's <alpha-value> works.
+ * Dark is the default: this app is used in gyms, often at night.
+ */
+@layer base {
+  :root {
+    --color-surface: 250 250 250;
+    --color-surface-raised: 255 255 255;
+    --color-surface-sunken: 240 240 242;
+    --color-content: 24 24 27;
+    --color-content-muted: 90 90 98;
+    --color-content-faint: 142 142 150;
+    --color-line: 226 226 230;
+    --color-accent: 37 99 235;
+    --color-positive: 22 163 74;
+    --color-warning: 217 119 6;
+    --color-danger: 220 38 38;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-surface: 12 12 14;
+      --color-surface-raised: 26 26 30;
+      --color-surface-sunken: 6 6 8;
+      --color-content: 244 244 245;
+      --color-content-muted: 161 161 170;
+      --color-content-faint: 113 113 122;
+      --color-line: 45 45 52;
+      --color-accent: 96 165 250;
+      --color-positive: 74 222 128;
+      --color-warning: 251 191 36;
+      --color-danger: 248 113 113;
+    }
+  }
 }
