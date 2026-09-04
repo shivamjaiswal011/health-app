@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { Link, router, useLocalSearchParams } from 'expo-router';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text } from 'react-native';
 
 import { ExerciseBlock } from '@/features/workout-logging/components/exercise-block';
 import { RestTimerBar } from '@/features/workout-logging/components/rest-timer-bar';
@@ -10,6 +10,7 @@ import { discardWorkout, finishWorkout } from '@/features/workout-logging/reposi
 import { useRestTimer } from '@/features/workout-logging/rest-timer';
 import { announceFailure } from '@/ui/failure';
 import { Screen } from '@/ui/screen';
+import { ScreenHeader } from '@/ui/screen-header';
 
 const NO_SETS: never[] = [];
 
@@ -43,14 +44,14 @@ function WorkoutHeader({ workoutId }: { workoutId: string }) {
   }
 
   return (
-    <View className="flex-row items-center justify-between px-5 pb-3 pt-1">
-      <Pressable onPress={() => confirmDiscard(workoutId, leaveSession)}>
-        <Text className="text-sm font-semibold text-danger">Discard</Text>
-      </Pressable>
-      <Pressable onPress={handleFinish}>
-        <Text className="text-sm font-semibold text-accent">Finish</Text>
-      </Pressable>
-    </View>
+    <ScreenHeader
+      left={{
+        label: 'Discard',
+        tone: 'danger',
+        onPress: () => confirmDiscard(workoutId, leaveSession),
+      }}
+      right={{ label: 'Finish', onPress: handleFinish }}
+    />
   );
 }
 

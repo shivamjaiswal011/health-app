@@ -1,15 +1,19 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { Link, router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { newId } from '@/db/id';
 import { RoutineExerciseList } from '@/features/routines/components/routine-exercise-list';
+import { DEFAULT_ROUTINE_NAME } from '@/features/routines/defaults';
 import { routineExercisesQuery, routineQuery } from '@/features/routines/queries';
 import { deleteRoutine, renameRoutine } from '@/features/routines/repository';
 import { startWorkoutFromRoutine } from '@/features/routines/start-from-routine';
 import { Button } from '@/ui/button';
-import { announceFailure } from '@/ui/failure';
+import { announceFailure, reportFailure } from '@/ui/failure';
 import { Screen } from '@/ui/screen';
+import { ScreenHeader } from '@/ui/screen-header';
+import { useAutosavedText } from '@/ui/use-autosaved-text';
 
 function confirmDelete(routineId: string) {
   Alert.alert('Delete routine?', 'Sessions already logged from it are kept.', [
@@ -27,17 +31,42 @@ function confirmDelete(routineId: string) {
 }
 
 function RoutineNameField({ routineId, name }: { routineId: string; name: string }) {
-  function handleRename(next: string) {
-    renameRoutine(routineId, next).catch((cause) => announceFailure('Renaming the routine', cause));
-  }
+  const field = useAutosavedText(name, (next) => {
+    renameRoutine(routineId, next.trim() || DEFAULT_ROUTINE_NAME).catch((cause) =>
+      announceFailure('Renaming the routine', cause),
+    );
+  });
 
   return (
     <TextInput
-      defaultValue={name}
-      onEndEditing={(event) => handleRename(event.nativeEvent.text)}
+      value={field.value}
+      onChangeText={field.onChangeText}
       placeholder="Routine name"
-      className="mx-5 mb-4 h-12 rounded-xl bg-surface-sunken px-4 text-lg font-semibold text-content"
+      className="mx-5 h-12 rounded-xl bg-surface-sunken px-4 text-lg font-semibold text-content"
     />
+  );
+}
+
+/**
+ * A routine the user opened and left without naming or filling in is not worth keeping.
+ * Discarding it on the way out is what stops the list collecting rows called
+ * "New Routine". Anything the user actually changed is kept.
+ */
+function useDiscardIfUntouched(routineId: string, isUntouched: boolean) {
+  const untouched = useRef(isUntouched);
+
+  useEffect(() => {
+    untouched.current = isUntouched;
+  }, [isUntouched]);
+
+  useEffect(
+    () => () => {
+      if (!untouched.current) return;
+      deleteRoutine(routineId).catch((cause) =>
+        reportFailure('Discarding an empty routine', cause),
+      );
+    },
+    [routineId],
   );
 }
 
@@ -70,10 +99,17 @@ export default function RoutineScreen() {
   const entries = useLiveQuery(routineExercisesQuery(id));
   const name = routine.data[0]?.name ?? '';
 
+  useDiscardIfUntouched(id, entries.data.length === 0 && name === DEFAULT_ROUTINE_NAME);
+
   return (
-    <Screen title={name || 'Routine'}>
+    <Screen>
+      <ScreenHeader right={{ label: 'Done', onPress: () => router.back() }} />
+      <Text className="px-5 pb-3 text-3xl font-bold text-content">{name || 'Routine'}</Text>
       <ScrollView contentContainerClassName="pb-8" keyboardShouldPersistTaps="handled">
         <RoutineNameField routineId={id} name={name} />
+        <Text className="px-5 pb-4 pt-2 text-xs text-content-faint">
+          Changes are saved as you make them.
+        </Text>
         <RoutineExerciseList rows={entries.data} />
         <RoutineActions routineId={id} canStart={entries.data.length > 0} />
       </ScrollView>
