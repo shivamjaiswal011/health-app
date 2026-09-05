@@ -22,6 +22,8 @@ export type LoggedSet = {
 
 type SetRowProps = {
   set: LoggedSet;
+  /** Every exercise numbers its sets from one, so the number alone identifies nothing. */
+  exerciseName: string;
   previous: PreviousSet | undefined;
   onComplete: (values: SetValues) => void;
   onUncomplete: () => void;
@@ -36,11 +38,11 @@ function previousLabel(previous: PreviousSet | undefined): string {
   return `${previous.weightKg} × ${previous.reps}`;
 }
 
-function RemoveAction({ onRemove }: { onRemove: () => void }) {
+function RemoveAction({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <Pressable
       onPress={onRemove}
-      accessibilityLabel="Remove set"
+      accessibilityLabel={label}
       style={{ width: REMOVE_ACTION_WIDTH }}
       className="items-center justify-center bg-danger">
       <Ionicons name="trash-outline" color="white" size={20} />
@@ -89,24 +91,32 @@ function ValueFields({ set, previous, onWeight, onReps }: ValueFieldsProps) {
 
 type CompleteToggleProps = {
   isComplete: boolean;
-  position: number;
+  label: string;
   onPress: () => void;
 };
 
-function CompleteToggle({ isComplete, position, onPress }: CompleteToggleProps) {
+function CompleteToggle({ isComplete, label, onPress }: CompleteToggleProps) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: isComplete }}
-      accessibilityLabel={`Set ${position + 1}`}
+      accessibilityLabel={label}
       className={`h-11 w-11 items-center justify-center rounded-lg ${isComplete ? 'bg-positive' : 'bg-surface-sunken'}`}>
       <Ionicons name="checkmark" size={20} color={isComplete ? 'white' : 'rgb(113,113,122)'} />
     </Pressable>
   );
 }
 
-export function SetRow({ set, previous, onComplete, onUncomplete, onEdit, onRemove }: SetRowProps) {
+export function SetRow({
+  set,
+  exerciseName,
+  previous,
+  onComplete,
+  onUncomplete,
+  onEdit,
+  onRemove,
+}: SetRowProps) {
   const [weightKg, setWeightKg] = useState(set.weightKg);
   const [reps, setReps] = useState(set.reps);
   const isComplete = set.completedAt !== null;
@@ -132,13 +142,22 @@ export function SetRow({ set, previous, onComplete, onUncomplete, onEdit, onRemo
 
   return (
     <ReanimatedSwipeable
-      renderRightActions={() => <RemoveAction onRemove={onRemove} />}
+      renderRightActions={() => (
+        <RemoveAction
+          label={`Remove ${exerciseName} set ${set.position + 1}`}
+          onRemove={onRemove}
+        />
+      )}
       overshootRight={false}>
       <View
         className={`flex-row items-center gap-2 px-4 py-1.5 ${isComplete ? 'bg-positive/10' : 'bg-surface-raised'}`}>
         <SetLabels position={set.position} previous={previous} />
         <ValueFields set={set} previous={previous} onWeight={handleWeight} onReps={handleReps} />
-        <CompleteToggle isComplete={isComplete} position={set.position} onPress={handleToggle} />
+        <CompleteToggle
+          isComplete={isComplete}
+          label={`${exerciseName}, set ${set.position + 1}`}
+          onPress={handleToggle}
+        />
       </View>
     </ReanimatedSwipeable>
   );

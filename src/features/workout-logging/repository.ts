@@ -4,6 +4,7 @@ import { database } from '@/db/client';
 import { newId } from '@/db/id';
 import { logChange, withTimestamps, type Executor } from '@/db/mutation';
 import { sets, workoutExercises, workouts } from '@/db/schema';
+import type { PlannedSet } from '@/domain/training/prefill';
 import type { SetType } from '@/db/schema';
 
 const WORKOUTS = 'workouts';
@@ -26,7 +27,8 @@ export async function startWorkout(workout: NewWorkout): Promise<void> {
 
 export type PlannedExercise = {
   exerciseId: string;
-  targetSets: number;
+  /** One entry per set to open, carrying whatever it should start with. */
+  sets: PlannedSet[];
 };
 
 type PlannedExercisePlacement = {
@@ -47,7 +49,7 @@ async function insertPlannedExercise(tx: Executor, placement: PlannedExercisePla
     operation: 'insert',
   });
 
-  for (let slot = 0; slot < planned.targetSets; slot += 1) {
+  for (const [slot, planningSet] of planned.sets.entries()) {
     const setId = newId();
     await tx.insert(sets).values(
       withTimestamps({
@@ -56,6 +58,10 @@ async function insertPlannedExercise(tx: Executor, placement: PlannedExercisePla
         exerciseId: planned.exerciseId,
         position: slot,
         setType: 'working' as const,
+        // Opened with last session's numbers but deliberately not completed: the
+        // lifter still ticks every set, so nothing is recorded that was not done.
+        weightKg: planningSet.weightKg,
+        reps: planningSet.reps,
       }),
     );
     await logChange(tx, { entityTable: SETS, entityId: setId, operation: 'insert' });
@@ -63,8 +69,8 @@ async function insertPlannedExercise(tx: Executor, placement: PlannedExercisePla
 }
 
 /**
- * Starts a session pre-filled from a routine: the exercises in order, each with its
- * target number of empty set rows ready to fill in.
+ * Starts a session from a routine: the exercises in order, each with its set rows
+ * already opened and carrying whatever the caller planned for them.
  *
  * Written as one transaction rather than by composing the individual repository
  * calls, so a failure part-way cannot leave a half-built session behind.
@@ -107,6 +113,8 @@ export type NewSet = {
   exerciseId: string;
   position: number;
   setType: SetType;
+  weightKg?: number | null;
+  reps?: number | null;
 };
 
 /**

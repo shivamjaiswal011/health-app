@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Alert, Pressable, Text, View } from 'react-native';
 
 import { newId } from '@/db/id';
+import { prefillFromPrevious } from '@/domain/training/prefill';
 import { announceFailure } from '@/ui/failure';
 import { IconButton } from '@/ui/icon-button';
 
@@ -16,6 +17,7 @@ import {
 } from '../repository';
 import { useRestTimer } from '../rest-timer';
 import { usePreviousPerformance } from '../use-previous-performance';
+import type { PreviousSet } from '../queries';
 import { SetRow, type LoggedSet } from './set-row';
 
 export type WorkoutExerciseEntry = {
@@ -70,18 +72,25 @@ function ColumnHeadings() {
   );
 }
 
-export function ExerciseBlock({ entry, workoutId, sets }: ExerciseBlockProps) {
-  const previous = usePreviousPerformance(entry.exerciseId, workoutId);
+function useSetActions(entry: WorkoutExerciseEntry, previous: PreviousSet[], setCount: number) {
   const startRest = useRestTimer((state) => state.startRest);
   const restSeconds = useRestTimer((state) => state.durationSeconds);
 
   function handleAddSet() {
+    // A set added by hand opens the same way a planned one does: with what was lifted
+    // in this slot last time, if there was one.
+    const [opening] = prefillFromPrevious(
+      1,
+      previous.filter((set) => set.position === setCount),
+    );
     addSet({
       id: newId(),
       workoutExerciseId: entry.id,
       exerciseId: entry.exerciseId,
-      position: sets.length,
+      position: setCount,
       setType: 'working' as const,
+      weightKg: opening?.weightKg ?? null,
+      reps: opening?.reps ?? null,
     }).catch((cause) => announceFailure('Adding a set', cause));
   }
 
@@ -91,6 +100,13 @@ export function ExerciseBlock({ entry, workoutId, sets }: ExerciseBlockProps) {
     startRest(restSeconds);
   }
 
+  return { handleAddSet, handleComplete };
+}
+
+export function ExerciseBlock({ entry, workoutId, sets }: ExerciseBlockProps) {
+  const previous = usePreviousPerformance(entry.exerciseId, workoutId);
+  const { handleAddSet, handleComplete } = useSetActions(entry, previous, sets.length);
+
   return (
     <View className="mb-4 overflow-hidden rounded-2xl bg-surface-raised">
       <BlockHeader entry={entry} />
@@ -99,6 +115,7 @@ export function ExerciseBlock({ entry, workoutId, sets }: ExerciseBlockProps) {
         <SetRow
           key={set.id}
           set={set}
+          exerciseName={entry.name}
           previous={previous[set.position]}
           onComplete={(values) => handleComplete(set.id, values)}
           onUncomplete={() =>

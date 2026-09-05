@@ -13,7 +13,7 @@ vi.mock('@/db/client', async () => {
 
 const { database } = await import('@/db/client');
 const { exercises, routineExercises, workouts } = await import('@/db/schema');
-const { workoutExercisesQuery, workoutSetsQuery } =
+const { loadPreviousPerformance, workoutExercisesQuery, workoutSetsQuery } =
   await import('@/features/workout-logging/queries');
 const { routineExercisesQuery, routineListQuery } = await import('./queries');
 const { startWorkoutFromRoutine } = await import('./start-from-routine');
@@ -246,6 +246,51 @@ describe('starting a workout from a routine', () => {
     const entries = await workoutExercisesQuery('w1');
     expect(entries.map((entry) => entry.name)).toEqual(['Back Squat']);
     expect(await workoutSetsQuery('w1')).toHaveLength(2);
+  });
+
+  it('opens each set with what was lifted last time', async () => {
+    await buildRoutine('r1', [[SQUAT, 2]]);
+    await startWorkoutFromRoutine('r1', 'w1');
+
+    // Perform the session, then finish it so it counts as history.
+    const logged = await workoutSetsQuery('w1');
+    await workoutRepository.completeSet(logged[0].id, { weightKg: 100, reps: 5 });
+    await workoutRepository.completeSet(logged[1].id, { weightKg: 105, reps: 4 });
+    await workoutRepository.finishWorkout('w1');
+
+    await startWorkoutFromRoutine('r1', 'w2');
+
+    const opened = await workoutSetsQuery('w2');
+    expect(opened.map((set) => [set.weightKg, set.reps])).toEqual([
+      [100, 5],
+      [105, 4],
+    ]);
+  });
+
+  it('leaves the pre-filled sets uncompleted, so nothing counts as performed', async () => {
+    await buildRoutine('r1', [[SQUAT, 1]]);
+    await startWorkoutFromRoutine('r1', 'w1');
+    const [first] = await workoutSetsQuery('w1');
+    await workoutRepository.completeSet(first.id, { weightKg: 100, reps: 5 });
+    await workoutRepository.finishWorkout('w1');
+
+    await startWorkoutFromRoutine('r1', 'w2');
+
+    const [opened] = await workoutSetsQuery('w2');
+    expect(opened.weightKg).toBe(100);
+    expect(opened.completedAt).toBeNull();
+    // And so the new session contributes nothing to history until it is ticked off.
+    expect(await loadPreviousPerformance(SQUAT, 'w3')).toEqual([
+      { position: 0, weightKg: 100, reps: 5 },
+    ]);
+  });
+
+  it('opens blank the first time an exercise is trained', async () => {
+    await buildRoutine('r1', [[BENCH, 2]]);
+    await startWorkoutFromRoutine('r1', 'w1');
+
+    const opened = await workoutSetsQuery('w1');
+    expect(opened.every((set) => set.weightKg === null && set.reps === null)).toBe(true);
   });
 
   it('refuses to start from a routine that no longer exists', async () => {

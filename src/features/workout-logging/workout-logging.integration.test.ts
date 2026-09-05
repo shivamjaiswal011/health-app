@@ -147,9 +147,10 @@ describe('logging a session', () => {
 
 describe('starting a planned workout', () => {
   it('leaves no partial session behind when the plan cannot be written', async () => {
+    const blank = { weightKg: null, reps: null };
     const plan = [
-      { exerciseId: SQUAT, targetSets: 2 },
-      { exerciseId: 'catalogue:does-not-exist', targetSets: 2 },
+      { exerciseId: SQUAT, sets: [blank, blank] },
+      { exerciseId: 'catalogue:does-not-exist', sets: [blank, blank] },
     ];
 
     await expect(
