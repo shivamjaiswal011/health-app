@@ -80,7 +80,7 @@ export function WeightCard() {
       </View>
 
       {points.length < MINIMUM_POINTS_TO_CHART ? (
-        <Text className="py-6 text-center text-sm text-content-muted">
+        <Text className="pb-2 pt-1 text-[15px] leading-[21px] text-content-muted">
           Log your weight on a few days and the trend appears here. The smoothed line is what to
           read — day-to-day swings are mostly water.
         </Text>

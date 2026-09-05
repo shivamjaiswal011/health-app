@@ -21,7 +21,7 @@ function VolumeCard() {
     <View className="gap-3 rounded-2xl bg-surface-raised p-4">
       <Text className="text-[15px] font-semibold text-content">Weekly volume</Text>
       {chronological.length < MINIMUM_POINTS_TO_CHART ? (
-        <Text className="py-6 text-center text-sm text-content-muted">
+        <Text className="pb-2 pt-1 text-[15px] leading-[21px] text-content-muted">
           Log a couple of weeks of training and your tonnage per week appears here.
         </Text>
       ) : (
@@ -43,7 +43,7 @@ function StrengthCard() {
     <View className="rounded-2xl bg-surface-raised p-4">
       <Text className="pb-1 text-[15px] font-semibold text-content">Strength</Text>
       {trained.data.length === 0 ? (
-        <Text className="py-6 text-center text-sm text-content-muted">
+        <Text className="pb-2 pt-1 text-[15px] leading-[21px] text-content-muted">
           Complete some sets and each lift gets its own estimated one-rep max chart.
         </Text>
       ) : (

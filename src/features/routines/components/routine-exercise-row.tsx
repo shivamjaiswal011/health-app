@@ -25,7 +25,7 @@ function DragHandle() {
       delayLongPress={120}
       accessibilityLabel="Drag to reorder"
       hitSlop={12}
-      className="py-2 pr-1 active:opacity-50">
+      className="w-7 items-start py-2 active:opacity-50">
       <Ionicons name="reorder-three-outline" size={HANDLE_SIZE} color={faint} />
     </Pressable>
   );
@@ -58,7 +58,6 @@ export function RoutineExerciseRow({
           placeholder="3"
         />
       </View>
-      <Text className="w-8 text-[13px] text-content-faint">sets</Text>
       <IconButton name="close" label={`Remove ${entry.name}`} onPress={onRemove} />
     </View>
   );

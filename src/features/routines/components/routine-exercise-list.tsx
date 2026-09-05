@@ -13,6 +13,21 @@ import { RoutineExerciseRow } from './routine-exercise-row';
 
 const MINIMUM_TARGET_SETS = 1;
 
+/**
+ * Mirrors the row's columns exactly — same gap and widths — so the headings sit over
+ * the controls they describe rather than near them.
+ */
+function ColumnHeadings() {
+  return (
+    <View className="flex-row items-center gap-3 bg-surface-raised pb-1.5 pl-3 pr-2 pt-3">
+      <View className="w-7" />
+      <Text className="flex-1 text-[13px] font-medium text-content-faint">Exercise</Text>
+      <Text className="w-14 text-center text-[13px] font-medium text-content-faint">Sets</Text>
+      <View className="w-9" />
+    </View>
+  );
+}
+
 /** Owns the routine's exercise mutations so the screen stays a composition. */
 export function RoutineExerciseList({ rows }: { rows: RoutineExerciseEntry[] }) {
   function handleReorder({ from, to }: ReorderableListReorderEvent) {
@@ -46,11 +61,7 @@ export function RoutineExerciseList({ rows }: { rows: RoutineExerciseEntry[] }) 
 
   return (
     <View className="mx-5 overflow-hidden rounded-2xl">
-      <View className="flex-row items-center bg-surface-raised px-3 pb-1 pt-3">
-        <Text className="flex-1 text-[13px] font-medium text-content-faint">Exercise</Text>
-        <Text className="text-[13px] font-medium text-content-faint">Target sets</Text>
-        <View className="w-9" />
-      </View>
+      <ColumnHeadings />
       <ReorderableList
         data={rows}
         keyExtractor={(entry) => entry.id}
