@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 
 import type { ActivityLevel, BiologicalSex, Goal } from '@/domain/profile/energy';
 import { macrosForProfile } from '@/domain/profile/macros-from-goal';
+import { ACTIVITY_CHOICES, GOAL_CHOICES } from '@/features/profile/labels';
 
 import type { OnboardingDraft } from '../steps';
 import { ChoiceGroup } from './choice-group';
@@ -68,14 +69,6 @@ export function AboutStep({ draft, update }: { draft: OnboardingDraft; update: U
   );
 }
 
-const ACTIVITIES: { value: ActivityLevel; label: string; detail: string }[] = [
-  { value: 'sedentary', label: 'Sedentary', detail: 'Desk job, little movement beyond daily life' },
-  { value: 'light', label: 'Lightly active', detail: 'Training one to three days a week' },
-  { value: 'moderate', label: 'Moderately active', detail: 'Training three to five days a week' },
-  { value: 'active', label: 'Active', detail: 'Training six or seven days a week' },
-  { value: 'very_active', label: 'Very active', detail: 'Physical job, or training twice a day' },
-];
-
 export function ActivityStep({ draft, update }: { draft: OnboardingDraft; update: Update }) {
   return (
     <View className="gap-4">
@@ -84,19 +77,13 @@ export function ActivityStep({ draft, update }: { draft: OnboardingDraft; update
         you are between two, the lower one is usually closer.
       </Text>
       <ChoiceGroup
-        choices={ACTIVITIES}
+        choices={ACTIVITY_CHOICES}
         selected={draft.activity}
         onSelect={(value) => update('activity', value)}
       />
     </View>
   );
 }
-
-const GOAL_CHOICES: { value: Goal; label: string; detail: string }[] = [
-  { value: 'lose', label: 'Lose fat', detail: 'About half a kilo a week' },
-  { value: 'maintain', label: 'Maintain', detail: 'Hold weight, train for strength' },
-  { value: 'gain', label: 'Build muscle', detail: 'A small surplus, to limit fat gained with it' },
-];
 
 export function GoalStep({ draft, update }: { draft: OnboardingDraft; update: Update }) {
   return (

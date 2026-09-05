@@ -22,10 +22,18 @@ export type NewBodyWeight = {
 export async function recordBodyWeight(entry: NewBodyWeight): Promise<void> {
   const now = new Date();
   await database.transaction(async (tx) => {
-    await tx
+    const superseded = await tx
       .update(bodyMetrics)
       .set({ deletedAt: now, updatedAt: now })
-      .where(and(eq(bodyMetrics.measuredOn, entry.measuredOn), isNull(bodyMetrics.deletedAt)));
+      .where(and(eq(bodyMetrics.measuredOn, entry.measuredOn), isNull(bodyMetrics.deletedAt)))
+      .returning({ id: bodyMetrics.id });
+
+    // The replaced weigh-in needs its own tombstone in the log. Recording only the
+    // insert would leave a synced device holding a reading this one already retired.
+    for (const row of superseded) {
+      await logChange(tx, { entityTable: BODY_METRICS, entityId: row.id, operation: 'delete' });
+    }
+
     await tx.insert(bodyMetrics).values(withTimestamps(entry));
     await logChange(tx, { entityTable: BODY_METRICS, entityId: entry.id, operation: 'insert' });
   });

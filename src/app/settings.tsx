@@ -160,6 +160,13 @@ export default function SettingsScreen() {
       <ScreenHeader left={{ label: 'Back', onPress: () => router.back(), tone: 'muted' }} />
       <Text className="px-5 pb-3 text-3xl font-bold text-content">Settings</Text>
       <ScrollView contentContainerClassName="px-5 pb-10">
+        <SettingRow
+          title="Profile"
+          detail="Your age, height, weight, activity and goal, and the targets they produce.">
+          <Pressable onPress={() => router.push('/profile')} className="active:opacity-60">
+            <Text className="text-[17px] font-semibold text-accent">View</Text>
+          </Pressable>
+        </SettingRow>
         <UnitSettings />
         <ReminderSetting />
         <BackupSetting />

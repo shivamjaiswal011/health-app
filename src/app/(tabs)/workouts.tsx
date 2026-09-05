@@ -57,7 +57,7 @@ function HistoryEntry({ workout, isLast }: { workout: HistoryRow; isLast: boolea
     <ListRow
       title={workout.name}
       detail={format(workout.startedAt, 'EEE d MMM · HH:mm')}
-      showChevron={false}
+      onPress={() => router.push(`/session/${workout.id}`)}
       isLast={isLast}
     />
   );

@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, lte } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull, lte } from 'drizzle-orm';
 
 import { database } from '@/db/client';
 import { newId } from '@/db/id';
@@ -95,4 +95,14 @@ export async function updateGoal(profileId: string, goal: Goal): Promise<void> {
       .where(eq(profiles.id, profileId));
     await logChange(tx, { entityTable: PROFILES, entityId: profileId, operation: 'update' });
   });
+}
+
+/** The most recent weigh-in, which the profile screen reports alongside height and age. */
+export function latestWeighInQuery() {
+  return database
+    .select({ weightKg: bodyMetrics.weightKg, measuredOn: bodyMetrics.measuredOn })
+    .from(bodyMetrics)
+    .where(and(isNotNull(bodyMetrics.weightKg), isNull(bodyMetrics.deletedAt)))
+    .orderBy(desc(bodyMetrics.measuredOn))
+    .limit(1);
 }
