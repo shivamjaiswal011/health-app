@@ -31,6 +31,10 @@ have eaten before, and copy-yesterday.
 **Progress.** Bodyweight and per-lift strength trends drawn over the raw series, weekly
 training volume, and a dashboard covering both halves.
 
+**Setup.** A first run asks height, weight, activity and goal, derives calorie and macro
+targets from Mifflin-St Jeor, and records a first weigh-in so trends start on day one.
+Skippable, and every figure is editable afterwards.
+
 **Insights.** Ten rules over your own history, each stating the numbers behind it —
 including cross-domain observations neither log could make alone, like eating less on the
 days you train.
@@ -91,8 +95,8 @@ is not an exemption. The reasoning is written up in
 ## Status
 
 All six planned milestones are built and the app runs end to end. It has not been
-released, and a few things are known-unfinished: there is no onboarding flow, the daily
-reminder toggle does not work, and swipe-to-delete on set rows is untested.
+released, and two things are known-unfinished: the daily reminder toggle does not work,
+and swipe-to-delete on set rows is untested.
 
 ## Licence
 
