@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-
 import { eq } from 'drizzle-orm';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -12,84 +9,26 @@ vi.mock('@/db/client', async () => {
 });
 
 const { database } = await import('@/db/client');
-const { exercises, routineExercises, workouts } = await import('@/db/schema');
+const { routineExercises, workouts } = await import('@/db/schema');
 const { loadPreviousPerformance, workoutExercisesQuery, workoutSetsQuery } =
   await import('@/features/workout-logging/queries');
 const { routineExercisesQuery, routineListQuery } = await import('./queries');
 const { startWorkoutFromRoutine } = await import('./start-from-routine');
 
-const KILOGRAM_PREFERENCES = { fallbackUnit: 'kg' as const };
+const KILOGRAM_PREFERENCES = { fallbackUnit: 'kg' as const, challenge: null };
 const { saveWorkoutAsRoutine } = await import('./save-as-routine');
 const repository = await import('./repository');
 const workoutRepository = await import('@/features/workout-logging/repository');
 
-const MIGRATIONS_DIR = path.join(__dirname, '../../db/migrations');
-const STATEMENT_SEPARATOR = '--> statement-breakpoint';
-const TABLES_TO_CLEAR = [
-  'change_log',
-  'sets',
-  'workout_exercises',
-  'workouts',
-  'routine_exercises',
-  'routines',
-  'exercises',
-];
-
-const SQUAT = 'catalogue:squat';
-const BENCH = 'catalogue:bench';
-
-async function applyMigrations() {
-  const journal = JSON.parse(
-    readFileSync(path.join(MIGRATIONS_DIR, 'meta/_journal.json'), 'utf8'),
-  ) as { entries: { tag: string }[] };
-
-  for (const entry of journal.entries) {
-    const sql = readFileSync(path.join(MIGRATIONS_DIR, `${entry.tag}.sql`), 'utf8');
-    for (const statement of sql.split(STATEMENT_SEPARATOR)) {
-      if (statement.trim()) await database.run(statement);
-    }
-  }
-}
-
-async function seedExercise(id: string, name: string) {
-  const now = new Date();
-  await database.insert(exercises).values({
-    id,
-    createdAt: now,
-    updatedAt: now,
-    name,
-    primaryMuscle: 'quads',
-    secondaryMuscles: [],
-    equipment: 'barbell',
-    trackingMode: 'weight_and_reps',
-  });
-}
-
-async function buildRoutine(routineId: string, plan: [string, number][]) {
-  await repository.createRoutine({ id: routineId, name: 'Push A', position: 0 });
-  for (const [index, [exerciseId, targetSets]] of plan.entries()) {
-    await repository.addExerciseToRoutine({
-      id: `${routineId}-${index}`,
-      routineId,
-      exerciseId,
-      position: index,
-      targetSets,
-    });
-  }
-}
+const { applyMigrations, buildRoutine, resetDatabase, BENCH, SQUAT } =
+  await import('./routine-test-harness');
 
 beforeAll(async () => {
   await database.run('PRAGMA foreign_keys = ON');
   await applyMigrations();
 });
 
-beforeEach(async () => {
-  for (const table of TABLES_TO_CLEAR) {
-    await database.run(`DELETE FROM ${table}`);
-  }
-  await seedExercise(SQUAT, 'Back Squat');
-  await seedExercise(BENCH, 'Bench Press');
-});
+beforeEach(resetDatabase);
 
 describe('editing a routine', () => {
   it('lists exercises in the order they were added', async () => {
@@ -296,7 +235,9 @@ describe('starting a workout from a routine', () => {
   });
 
   it('refuses to start from a routine that no longer exists', async () => {
-    await expect(startWorkoutFromRoutine('missing', 'w1', KILOGRAM_PREFERENCES)).rejects.toThrow(/no longer exists/);
+    await expect(startWorkoutFromRoutine('missing', 'w1', KILOGRAM_PREFERENCES)).rejects.toThrow(
+      /no longer exists/,
+    );
   });
 
   it('skips an entry whose exercise no longer exists rather than failing to start', async () => {

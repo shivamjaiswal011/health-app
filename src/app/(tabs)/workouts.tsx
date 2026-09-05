@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text } from 'react-native';
 
 import { newId } from '@/db/id';
 import { defaultWorkoutName } from '@/domain/training/workout-name';
+import { useChallengeConfig } from '@/features/challenge/use-challenge-config';
 import { routineListQuery } from '@/features/routines/queries';
 import { createRoutine } from '@/features/routines/repository';
 import { activeWorkoutQuery, workoutHistoryQuery } from '@/features/workout-logging/queries';
@@ -62,6 +63,28 @@ function HistoryEntry({ workout, isLast }: { workout: HistoryRow; isLast: boolea
   );
 }
 
+/**
+ * The way into challenge mode, stated as what it does rather than what it is called —
+ * a lifter scanning the Train tab should be able to tell whether they want it.
+ */
+function ChallengeCard() {
+  const { enabled, settings } = useChallengeConfig();
+  const range = `${settings.defaultRange.low}–${settings.defaultRange.high} reps`;
+
+  return (
+    <Card>
+      <ListRow
+        title="Challenge mode"
+        detail={
+          enabled ? `On · ${range} by default` : 'Off · progressive overload, session by session'
+        }
+        onPress={() => router.push('/challenge')}
+        isLast
+      />
+    </Card>
+  );
+}
+
 function RoutinesSection({ routines }: { routines: { id: string; name: string }[] }) {
   return (
     <Card
@@ -108,6 +131,8 @@ export default function WorkoutsScreen() {
         )}
 
         <RoutinesSection routines={routines.data} />
+
+        <ChallengeCard />
 
         {history.data.length > 0 && (
           <Card title="History">

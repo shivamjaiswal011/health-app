@@ -5,6 +5,7 @@ import { Alert, Pressable, ScrollView, Text } from 'react-native';
 import { newId } from '@/db/id';
 import { saveWorkoutAsRoutine } from '@/features/routines/save-as-routine';
 import { ExerciseBlock } from '@/features/workout-logging/components/exercise-block';
+import { useChallengeTargets } from '@/features/workout-logging/use-challenge-targets';
 import { RestTimerBar } from '@/features/workout-logging/components/rest-timer-bar';
 import { groupSetsByExercise } from '@/features/workout-logging/group-sets';
 import {
@@ -88,6 +89,7 @@ export default function WorkoutScreen() {
   const entries = useLiveQuery(workoutExercisesQuery(id));
   const sets = useLiveQuery(workoutSetsQuery(id));
   const setsByExercise = groupSetsByExercise(sets.data);
+  const challengeTarget = useChallengeTargets(id);
 
   return (
     <Screen title="Workout">
@@ -99,6 +101,7 @@ export default function WorkoutScreen() {
             entry={entry}
             workoutId={id}
             sets={setsByExercise.get(entry.id) ?? NO_SETS}
+            challengeTarget={challengeTarget}
           />
         ))}
         <Link href={{ pathname: '/workout/add-exercise', params: { workoutId: id } }} asChild>

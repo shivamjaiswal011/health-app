@@ -4,6 +4,7 @@ import { database } from '@/db/client';
 import { newId } from '@/db/id';
 import { logChange, withTimestamps } from '@/db/mutation';
 import { routineExercises, routines } from '@/db/schema';
+import type { RepRange } from '@/domain/training/challenge';
 
 const ROUTINES = 'routines';
 const ROUTINE_EXERCISES = 'routine_exercises';
@@ -75,6 +76,9 @@ export type NewRoutineExercise = {
   exerciseId: string;
   position: number;
   targetSets: number;
+  /** Challenge mode's rep range. Left unset, the exercise uses the configured default. */
+  targetRepsLow?: number;
+  targetRepsHigh?: number;
 };
 
 export async function addExerciseToRoutine(entry: NewRoutineExercise): Promise<void> {
@@ -93,6 +97,25 @@ export async function setTargetSets(routineExerciseId: string, targetSets: numbe
     await tx
       .update(routineExercises)
       .set({ targetSets, updatedAt: new Date() })
+      .where(eq(routineExercises.id, routineExerciseId));
+    await logChange(tx, {
+      entityTable: ROUTINE_EXERCISES,
+      entityId: routineExerciseId,
+      operation: 'update',
+    });
+  });
+}
+
+/**
+ * Pins the rep range challenge mode ladders through for one exercise. Stored on the
+ * routine rather than the exercise: the same lift is trained for strength in one
+ * routine and for volume in another.
+ */
+export async function setRepRange(routineExerciseId: string, range: RepRange): Promise<void> {
+  await database.transaction(async (tx) => {
+    await tx
+      .update(routineExercises)
+      .set({ targetRepsLow: range.low, targetRepsHigh: range.high, updatedAt: new Date() })
       .where(eq(routineExercises.id, routineExerciseId));
     await logChange(tx, {
       entityTable: ROUTINE_EXERCISES,

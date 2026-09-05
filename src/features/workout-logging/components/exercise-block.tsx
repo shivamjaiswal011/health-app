@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Alert, Pressable, Text, View } from 'react-native';
 
 import { newId } from '@/db/id';
+import type { ChallengeTarget } from '@/domain/training/challenge';
 import { prefillFromPrevious } from '@/domain/training/prefill';
 import { displayUnit } from '@/features/settings/units';
 import { announceFailure } from '@/ui/failure';
@@ -18,6 +19,7 @@ import {
 } from '../repository';
 import { useRestTimer } from '../rest-timer';
 import { usePreviousPerformance } from '../use-previous-performance';
+import type { ChallengeTargetLookup } from '../use-challenge-targets';
 import type { PreviousSet } from '../queries';
 import { SetRow, type LoggedSet } from './set-row';
 
@@ -31,6 +33,8 @@ type ExerciseBlockProps = {
   entry: WorkoutExerciseEntry;
   workoutId: string;
   sets: LoggedSet[];
+  /** Returns null unless challenge mode is on and this session came from a routine. */
+  challengeTarget: ChallengeTargetLookup;
 };
 
 function confirmRemoveExercise(entry: WorkoutExerciseEntry) {
@@ -46,6 +50,28 @@ function confirmRemoveExercise(entry: WorkoutExerciseEntry) {
       },
     },
   ]);
+}
+
+/**
+ * What this exercise is being asked for, stated before the rows rather than left to be
+ * inferred from the numbers already in them — the point of the mode is knowing what you
+ * are chasing before you start the set.
+ */
+function ChallengeBanner({ target }: { target: ChallengeTarget }) {
+  const conquered = target.rangeConquered;
+
+  return (
+    <View className="mx-4 mb-1 flex-row items-center justify-between rounded-xl bg-accent/10 px-3 py-2">
+      <Text className="text-[13px] font-semibold text-accent">
+        {conquered ? 'Weight up' : `Level ${target.level} of ${target.levels}`}
+      </Text>
+      <Text className="text-[13px] text-content-muted">
+        {conquered
+          ? `range cleared · ${target.targetReps} reps to start again`
+          : `${target.targetReps} reps on every set`}
+      </Text>
+    </View>
+  );
 }
 
 function BlockHeader({ entry }: { entry: WorkoutExerciseEntry }) {
@@ -108,13 +134,15 @@ function useSetActions(entry: WorkoutExerciseEntry, previous: PreviousSet[], set
   return { handleAddSet, handleComplete };
 }
 
-export function ExerciseBlock({ entry, workoutId, sets }: ExerciseBlockProps) {
+export function ExerciseBlock({ entry, workoutId, sets, challengeTarget }: ExerciseBlockProps) {
   const previous = usePreviousPerformance(entry.exerciseId, workoutId);
+  const target = challengeTarget(entry.exerciseId, previous);
   const { handleAddSet, handleComplete } = useSetActions(entry, previous, sets.length);
 
   return (
     <View className="mb-4 overflow-hidden rounded-2xl bg-surface-raised">
       <BlockHeader entry={entry} />
+      {target ? <ChallengeBanner target={target} /> : null}
       <ColumnHeadings />
       {sets.map((set) => (
         <SetRow

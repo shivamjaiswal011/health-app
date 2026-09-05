@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatWeight, toDisplayWeight, toKilograms, formatWeightTotal, formatWeightChange,
+import {
+  formatWeight,
+  toDisplayWeight,
+  toKilograms,
+  formatWeightTotal,
+  formatWeightChange,
 } from './weight';
 
 describe('toKilograms', () => {

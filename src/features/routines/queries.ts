@@ -1,7 +1,9 @@
 import { and, asc, eq, isNull } from 'drizzle-orm';
 
 import { database } from '@/db/client';
-import { exercises, routineExercises, routines } from '@/db/schema';
+import { exercises, routineExercises, routines, workouts } from '@/db/schema';
+import type { RepRange } from '@/domain/training/challenge';
+import type { EquipmentType } from '@/domain/training/equipment';
 
 export function routineListQuery() {
   return database
@@ -28,7 +30,11 @@ export type RoutineExerciseEntry = {
   exerciseId: string;
   name: string;
   position: number;
+  equipment: EquipmentType;
   targetSets: number | null;
+  /** The challenge-mode rep range. Null on both when the exercise uses the default. */
+  targetRepsLow: number | null;
+  targetRepsHigh: number | null;
 };
 
 export function routineExercisesQuery(routineId: string) {
@@ -38,7 +44,10 @@ export function routineExercisesQuery(routineId: string) {
       exerciseId: exercises.id,
       name: exercises.name,
       position: routineExercises.position,
+      equipment: exercises.equipment,
       targetSets: routineExercises.targetSets,
+      targetRepsLow: routineExercises.targetRepsLow,
+      targetRepsHigh: routineExercises.targetRepsHigh,
     })
     .from(routineExercises)
     .innerJoin(exercises, eq(routineExercises.exerciseId, exercises.id))
@@ -49,4 +58,27 @@ export function routineExercisesQuery(routineId: string) {
 /** One-shot read used when starting a workout, where a live subscription is pointless. */
 export function loadRoutineExercises(routineId: string): Promise<RoutineExerciseEntry[]> {
   return routineExercisesQuery(routineId);
+}
+
+/**
+ * The rep range each exercise of a workout's source routine ladders through, keyed by
+ * exercise. Read by the logger to show the target it is asking for; an ad-hoc session
+ * has no routine and so no ranges.
+ */
+export async function loadRoutineRepRanges(
+  workoutId: string,
+): Promise<Map<string, Partial<RepRange>>> {
+  const rows = await database
+    .select({
+      exerciseId: routineExercises.exerciseId,
+      low: routineExercises.targetRepsLow,
+      high: routineExercises.targetRepsHigh,
+    })
+    .from(workouts)
+    .innerJoin(routineExercises, eq(routineExercises.routineId, workouts.routineId))
+    .where(and(eq(workouts.id, workoutId), isNull(routineExercises.deletedAt)));
+
+  return new Map(
+    rows.map((row) => [row.exerciseId, { low: row.low ?? undefined, high: row.high ?? undefined }]),
+  );
 }

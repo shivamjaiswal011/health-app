@@ -8,6 +8,7 @@ import { RoutineExerciseList } from '@/features/routines/components/routine-exer
 import { DEFAULT_ROUTINE_NAME } from '@/features/routines/defaults';
 import { routineExercisesQuery, routineQuery } from '@/features/routines/queries';
 import { deleteRoutine, renameRoutine } from '@/features/routines/repository';
+import { challengeEnabled, challengeSettings } from '@/features/settings/challenge';
 import { displayUnit } from '@/features/settings/units';
 import { startWorkoutFromRoutine } from '@/features/routines/start-from-routine';
 import { Button } from '@/ui/button';
@@ -98,7 +99,10 @@ export default function RoutineScreen() {
 
   function handleStart() {
     const workoutId = newId();
-    startWorkoutFromRoutine(id, workoutId, { fallbackUnit: displayUnit() })
+    startWorkoutFromRoutine(id, workoutId, {
+      fallbackUnit: displayUnit(),
+      challenge: challengeEnabled() ? challengeSettings() : null,
+    })
       .then(() => router.replace(`/workout/${workoutId}`))
       .catch((cause) => announceFailure('Starting the workout', cause));
   }
