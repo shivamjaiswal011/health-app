@@ -1,4 +1,4 @@
-# health-app
+# OneHealth
 
 An offline-first training and nutrition tracker. Everything is computed and stored on
 the phone: no server, no account, no background process, nothing sent anywhere.
@@ -6,7 +6,7 @@ the phone: no server, no account, no background process, nothing sent anywhere.
 Built for Indian users first — the food database ranks dishes like roti, dal and paneer
 above generic entries, and portions are in katoris and rotis rather than grams alone.
 
-> Working title. Nothing in the code depends on the name.
+> The repository is still named `health-app`; only the app's display name changed.
 
 ## Why it works this way
 
