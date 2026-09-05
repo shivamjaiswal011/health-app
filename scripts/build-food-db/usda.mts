@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 
+import { withPreferredDefault } from './portion-preference.mts';
 import type { FoodPortion, FoodRecord, Nutrients } from './types.mts';
 
 /** USDA nutrient numbers. Stable across releases; the internal ids are not. */
@@ -75,9 +76,9 @@ function readPortions(food: RawFood): FoodPortion[] {
   for (const raw of food.foodPortions ?? []) {
     const label = portionLabel(raw);
     if (!label || !raw.gramWeight) continue;
-    portions.push({ label, grams: raw.gramWeight, isDefault: portions.length === 0 });
+    portions.push({ label, grams: raw.gramWeight, isDefault: false });
   }
-  return portions;
+  return withPreferredDefault(portions);
 }
 
 /** Every USDA release nests its foods under a single top-level key naming the dataset. */

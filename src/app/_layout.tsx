@@ -73,7 +73,7 @@ export default function RootLayout() {
               {/* Read-only, shipped in the binary and copied out on first launch.
                 Versioned in the filename so a rebuilt database replaces the copy. */}
               <SQLiteProvider
-                databaseName="foods-v1.db"
+                databaseName="foods-v2.db"
                 assetSource={{ assetId: require('../../assets/foods.db') }}>
                 <Stack screenOptions={{ headerShown: false }} />
                 <FirstRunRedirect ready />

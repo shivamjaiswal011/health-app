@@ -54,29 +54,67 @@ function toMatchQuery(term: string): string | null {
   return words.map((word) => `${word}*`).join(' ');
 }
 
-const SEARCH_SQL = `
-  SELECT f.id, f.name, f.source,
-         f.kcal_per_100g    AS kcalPer100g,
-         f.protein_per_100g AS proteinPer100g,
-         f.carbs_per_100g   AS carbsPer100g,
-         f.fat_per_100g     AS fatPer100g,
-         f.fiber_per_100g   AS fiberPer100g
-  FROM foods_fts
-  JOIN foods f ON f.id = foods_fts.food_id
-  WHERE foods_fts MATCH ?
-  ORDER BY (f.source = 'composed') DESC, length(f.name) ASC
-  LIMIT ?
-`;
+/**
+ * Punctuation in USDA names is inconsistent — commas, brackets and hyphens all separate
+ * words. Flattening them means "hard-boiled" contains the word "boiled", which is how a
+ * user searching for it expects to find the food.
+ */
+const NORMALISED_NAME =
+  "' ' || replace(replace(replace(replace(replace(lower(f.name), ',', ' '), '(', ' '), ')', ' '), '-', ' '), '/', ' ') || ' '";
+
+function buildSearchSql(termCount: number): string {
+  const wholeWordHits = Array.from(
+    { length: termCount },
+    () => `(${NORMALISED_NAME} LIKE ?)`,
+  ).join(' + ');
+
+  return `
+    SELECT f.id, f.name, f.source,
+           f.kcal_per_100g    AS kcalPer100g,
+           f.protein_per_100g AS proteinPer100g,
+           f.carbs_per_100g   AS carbsPer100g,
+           f.fat_per_100g     AS fatPer100g,
+           f.fiber_per_100g   AS fiberPer100g
+    FROM foods_fts
+    JOIN foods f ON f.id = foods_fts.food_id
+    WHERE foods_fts MATCH ?
+    ORDER BY
+      (${wholeWordHits}) DESC,
+      (f.source = 'composed') DESC,
+      (lower(f.name) LIKE ?) DESC,
+      length(f.name) ASC
+    LIMIT ?
+  `;
+}
+
+function termsOf(term: string): string[] {
+  return term
+    .toLowerCase()
+    .split(/[^a-z0-9]+/i)
+    .filter(Boolean);
+}
 
 /**
- * Composed Indian dishes rank above USDA entries, and shorter names above longer ones.
- * Someone typing "rice" wants Steamed Rice, not "Rice, white, long-grain, parboiled,
- * enriched, dry" — which BM25 alone would happily put first.
+ * Ranked in four passes: how many search words appear as whole words in the name, then
+ * composed Indian dishes, then names opening with the first word, then shortest.
+ *
+ * Counting whole-word hits across every term is what the first version got wrong twice.
+ * Ranking on name length alone put Eggplant and Eggnog above every actual egg, because
+ * FTS5 prefix matching treats "egg" and "eggplant" alike. Scoring only the first word
+ * then put Eggplant top for "boiled egg", since eggplant is also boiled. The last pass
+ * is what makes "rice" find Steamed Rice rather than a rice cracker.
  */
 export async function searchFoods(foods: SQLiteDatabase, term: string): Promise<FoodHit[]> {
   const match = toMatchQuery(term);
   if (!match) return [];
-  return foods.getAllAsync<FoodHit>(SEARCH_SQL, [match, SEARCH_LIMIT]);
+
+  const terms = termsOf(term);
+  return foods.getAllAsync<FoodHit>(buildSearchSql(terms.length), [
+    match,
+    ...terms.map((word) => `% ${word} %`),
+    `${terms[0]}%`,
+    SEARCH_LIMIT,
+  ]);
 }
 
 export async function loadPortions(
