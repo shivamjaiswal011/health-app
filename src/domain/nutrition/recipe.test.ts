@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { composeServing, type RecipeIngredient } from './recipe';
 
-function ingredient(
-  grams: number,
-  kcal: number,
-  fiber: number | null = 0,
-): RecipeIngredient {
+function ingredient(grams: number, kcal: number, fiber: number | null = 0): RecipeIngredient {
   return { grams, kcal, protein: 10, carbs: 20, fat: 5, fiber };
 }
 

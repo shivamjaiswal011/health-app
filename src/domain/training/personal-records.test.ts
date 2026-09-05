@@ -20,10 +20,7 @@ function completedSet(weightKg: number | null, reps: number | null): CompletedSe
 describe('findRecordsBeatenBySet', () => {
   it('treats a first ever set as beating both per-set records', () => {
     const beaten = findRecordsBeatenBySet(NO_PREVIOUS_RECORDS, completedSet(100, 5));
-    expect(beaten.map((record) => record.kind)).toEqual([
-      'heaviest_weight',
-      'best_estimated_1rm',
-    ]);
+    expect(beaten.map((record) => record.kind)).toEqual(['heaviest_weight', 'best_estimated_1rm']);
   });
 
   it('reports no record when the set matches the existing mark exactly', () => {

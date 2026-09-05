@@ -14,7 +14,10 @@ export type HeaderAction = {
 
 function ActionText({ action }: { action: HeaderAction }) {
   return (
-    <Pressable onPress={action.onPress} accessibilityRole="button" className="py-1 active:opacity-60">
+    <Pressable
+      onPress={action.onPress}
+      accessibilityRole="button"
+      className="py-1 active:opacity-60">
       <Text className={`text-sm font-semibold ${TONE_CLASSES[action.tone ?? 'accent']}`}>
         {action.label}
       </Text>

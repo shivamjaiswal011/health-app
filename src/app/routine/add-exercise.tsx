@@ -29,9 +29,7 @@ export default function AddExerciseToRoutineScreen() {
 
   return (
     <Screen>
-      <ScreenHeader
-        left={{ label: 'Cancel', onPress: () => router.back(), tone: 'muted' }}
-      />
+      <ScreenHeader left={{ label: 'Cancel', onPress: () => router.back(), tone: 'muted' }} />
       <Text className="px-5 pb-3 text-3xl font-bold text-content">Add exercise</Text>
       <ExercisePicker onPick={handlePick} />
     </Screen>

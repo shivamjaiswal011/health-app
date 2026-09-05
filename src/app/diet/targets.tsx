@@ -85,8 +85,8 @@ function TargetNotes({ fields }: { fields: TargetValues }) {
   return (
     <>
       <Text className="py-4 text-xs text-content-faint">
-        Those macros add up to {Math.round(impliedKcal(fields))} kcal. They do not have to match
-        the calorie target exactly — leave calories blank to use this figure.
+        Those macros add up to {Math.round(impliedKcal(fields))} kcal. They do not have to match the
+        calorie target exactly — leave calories blank to use this figure.
       </Text>
       <Text className="pb-4 text-xs text-content-faint">
         Targets apply from today onward. Days already logged keep the target they were judged

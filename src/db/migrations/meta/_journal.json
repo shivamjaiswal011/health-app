@@ -15,6 +15,13 @@
       "when": 1788528345428,
       "tag": "0001_recipe_item_macros",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788584106443,
+      "tag": "0002_user_profile",
+      "breakpoints": true
     }
   ]
 }

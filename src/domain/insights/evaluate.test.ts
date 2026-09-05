@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-
 import { underfuelledTrainingDays } from './cross-domain-rules';
 import { evaluateInsights } from './evaluate';
-import {
-  emptyContext,
-  nutritionDays,
-} from './insight-fixtures';
-
+import { emptyContext, nutritionDays } from './insight-fixtures';
 
 describe('underfuelledTrainingDays', () => {
   it('reports eating less on the days that demand most', () => {

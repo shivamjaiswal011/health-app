@@ -19,8 +19,6 @@ export type LoggedMacros = Macros & {
 
 export const NO_MACROS: Macros = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
 
-
-
 /**
  * What a given weight of a food contributes. Rounded to one decimal because the
  * underlying composition is an estimate and false precision invites the user to

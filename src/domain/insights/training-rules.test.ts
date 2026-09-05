@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-
 import {
   decliningVolume,
   neglectedMuscle,
@@ -8,18 +7,15 @@ import {
   recentProgress,
   stagnantLift,
 } from './training-rules';
-import {
-  emptyContext,
-  sessions,
-  TEST_TODAY,
-} from './insight-fixtures';
-
+import { emptyContext, sessions, TEST_TODAY } from './insight-fixtures';
 
 describe('stagnantLift', () => {
   it('reports a lift with no new best for several sessions', () => {
     const context = {
       ...emptyContext(),
-      lifts: [{ exerciseId: 'bench', name: 'Bench Press', sessions: sessions([100, 90, 92, 91, 89]) }],
+      lifts: [
+        { exerciseId: 'bench', name: 'Bench Press', sessions: sessions([100, 90, 92, 91, 89]) },
+      ],
     };
 
     const insight = stagnantLift(context);

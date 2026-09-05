@@ -13,9 +13,8 @@ vi.mock('@/db/client', async () => {
 
 const { database } = await import('@/db/client');
 const { exercises, routineExercises, workouts } = await import('@/db/schema');
-const { workoutExercisesQuery, workoutSetsQuery } = await import(
-  '@/features/workout-logging/queries'
-);
+const { workoutExercisesQuery, workoutSetsQuery } =
+  await import('@/features/workout-logging/queries');
 const { routineExercisesQuery, routineListQuery } = await import('./queries');
 const { startWorkoutFromRoutine } = await import('./start-from-routine');
 const { saveWorkoutAsRoutine } = await import('./save-as-routine');

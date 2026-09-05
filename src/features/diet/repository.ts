@@ -140,10 +140,7 @@ export type EntryPlacement = {
  * own snapshot, so it needs no lookup in the food database and cannot disagree with
  * what the user saw last time.
  */
-export async function logAgain(
-  entry: RepeatableEntry,
-  placement: EntryPlacement,
-): Promise<void> {
+export async function logAgain(entry: RepeatableEntry, placement: EntryPlacement): Promise<void> {
   await logFood(repeatAs(entry, placement));
 }
 
@@ -185,10 +182,7 @@ export type PortionChange = {
 };
 
 /** Corrects how much was eaten, leaving which food it was alone. */
-export async function updateLoggedPortion(
-  entryId: string,
-  change: PortionChange,
-): Promise<void> {
+export async function updateLoggedPortion(entryId: string, change: PortionChange): Promise<void> {
   await database.transaction(async (tx) => {
     await tx
       .update(foodEntries)

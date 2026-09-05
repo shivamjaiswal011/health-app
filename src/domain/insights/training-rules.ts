@@ -47,9 +47,7 @@ export const decliningVolume: InsightRule = (context) => {
   const recent = context.weeks.slice(-(WEEKS_OF_DECLINE + 1));
   if (recent.length < WEEKS_OF_DECLINE + 1) return null;
 
-  const falling = recent.every(
-    (week, index) => index === 0 || week.sets < recent[index - 1].sets,
-  );
+  const falling = recent.every((week, index) => index === 0 || week.sets < recent[index - 1].sets);
   if (!falling) return null;
 
   return {
@@ -114,7 +112,10 @@ export const recentProgress: InsightRule = (context) => {
   for (const lift of context.lifts) {
     if (lift.sessions.length < MINIMUM_SESSIONS_FOR_PROGRESS) continue;
     const latest = lift.sessions[lift.sessions.length - 1];
-    if (daysSince(new Date(latest.at).toISOString().slice(0, ISO_DATE_LENGTH), context.today) > RECENT_PR_DAYS) {
+    if (
+      daysSince(new Date(latest.at).toISOString().slice(0, ISO_DATE_LENGTH), context.today) >
+      RECENT_PR_DAYS
+    ) {
       continue;
     }
     if (latest.value < bestOf(lift.sessions)) continue;

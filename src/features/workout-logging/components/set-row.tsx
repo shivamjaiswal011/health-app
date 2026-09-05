@@ -54,9 +54,7 @@ function SetLabels({ position, previous }: { position: number; previous?: Previo
       <Text className="w-6 text-center text-sm font-semibold text-content-muted">
         {position + 1}
       </Text>
-      <Text className="w-24 text-center text-xs text-content-faint">
-        {previousLabel(previous)}
-      </Text>
+      <Text className="w-24 text-center text-xs text-content-faint">{previousLabel(previous)}</Text>
     </>
   );
 }
@@ -108,14 +106,7 @@ function CompleteToggle({ isComplete, position, onPress }: CompleteToggleProps) 
   );
 }
 
-export function SetRow({
-  set,
-  previous,
-  onComplete,
-  onUncomplete,
-  onEdit,
-  onRemove,
-}: SetRowProps) {
+export function SetRow({ set, previous, onComplete, onUncomplete, onEdit, onRemove }: SetRowProps) {
   const [weightKg, setWeightKg] = useState(set.weightKg);
   const [reps, setReps] = useState(set.reps);
   const isComplete = set.completedAt !== null;
@@ -147,11 +138,7 @@ export function SetRow({
         className={`flex-row items-center gap-2 px-4 py-1.5 ${isComplete ? 'bg-positive/10' : 'bg-surface-raised'}`}>
         <SetLabels position={set.position} previous={previous} />
         <ValueFields set={set} previous={previous} onWeight={handleWeight} onReps={handleReps} />
-        <CompleteToggle
-          isComplete={isComplete}
-          position={set.position}
-          onPress={handleToggle}
-        />
+        <CompleteToggle isComplete={isComplete} position={set.position} onPress={handleToggle} />
       </View>
     </ReanimatedSwipeable>
   );

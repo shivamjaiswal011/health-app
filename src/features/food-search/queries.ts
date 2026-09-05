@@ -73,10 +73,7 @@ const SEARCH_SQL = `
  * Someone typing "rice" wants Steamed Rice, not "Rice, white, long-grain, parboiled,
  * enriched, dry" — which BM25 alone would happily put first.
  */
-export async function searchFoods(
-  foods: SQLiteDatabase,
-  term: string,
-): Promise<FoodHit[]> {
+export async function searchFoods(foods: SQLiteDatabase, term: string): Promise<FoodHit[]> {
   const match = toMatchQuery(term);
   if (!match) return [];
   return foods.getAllAsync<FoodHit>(SEARCH_SQL, [match, SEARCH_LIMIT]);

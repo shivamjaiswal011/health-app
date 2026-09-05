@@ -73,10 +73,7 @@ export async function loadWorkoutPlan(workoutId: string): Promise<WorkoutPlanEnt
   const rows = await database
     .select({ exerciseId: workoutExercises.exerciseId, setCount: count(sets.id) })
     .from(workoutExercises)
-    .leftJoin(
-      sets,
-      and(eq(sets.workoutExerciseId, workoutExercises.id), isNull(sets.deletedAt)),
-    )
+    .leftJoin(sets, and(eq(sets.workoutExerciseId, workoutExercises.id), isNull(sets.deletedAt)))
     .where(and(eq(workoutExercises.workoutId, workoutId), isNull(workoutExercises.deletedAt)))
     .groupBy(workoutExercises.id)
     .orderBy(asc(workoutExercises.position));
@@ -152,8 +149,6 @@ export async function loadPreviousPerformance(
     .from(sets)
     .innerJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
     .innerJoin(workouts, eq(workoutExercises.workoutId, workouts.id))
-    .where(
-      and(liveCompletedSet(exerciseId), eq(workoutExercises.workoutId, previousWorkoutId)),
-    )
+    .where(and(liveCompletedSet(exerciseId), eq(workoutExercises.workoutId, previousWorkoutId)))
     .orderBy(asc(sets.position));
 }

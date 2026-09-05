@@ -37,10 +37,7 @@ export function recipeSummariesQuery() {
       totalFat: sum(recipeItems.fatAtAdd).mapWith(Number),
     })
     .from(recipes)
-    .leftJoin(
-      recipeItems,
-      and(eq(recipeItems.recipeId, recipes.id), isNull(recipeItems.deletedAt)),
-    )
+    .leftJoin(recipeItems, and(eq(recipeItems.recipeId, recipes.id), isNull(recipeItems.deletedAt)))
     .where(isNull(recipes.deletedAt))
     .groupBy(recipes.id)
     .orderBy(asc(recipes.name));

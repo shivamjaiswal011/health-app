@@ -1,18 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-
 import {
   loggingLapsed,
   proteinShortfall,
   weekendDivergence,
   weightVersusIntake,
 } from './nutrition-rules';
-import {
-  emptyContext,
-  nutritionDays,
-  TEST_TODAY,
-} from './insight-fixtures';
-
+import { emptyContext, nutritionDays, TEST_TODAY } from './insight-fixtures';
 
 describe('proteinShortfall', () => {
   it('reports a week averaging under target', () => {

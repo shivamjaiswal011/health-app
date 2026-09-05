@@ -55,12 +55,14 @@ describe('sumMacros', () => {
   });
 
   it('does not accumulate floating point noise', () => {
-    const total = sumMacros(Array.from({ length: 3 }, () => ({
-      kcal: 0.1,
-      protein: 0.1,
-      carbs: 0.1,
-      fat: 0.1,
-    })));
+    const total = sumMacros(
+      Array.from({ length: 3 }, () => ({
+        kcal: 0.1,
+        protein: 0.1,
+        carbs: 0.1,
+        fat: 0.1,
+      })),
+    );
     expect(total.kcal).toBe(0.3);
   });
 });

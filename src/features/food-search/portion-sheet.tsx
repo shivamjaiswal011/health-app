@@ -48,8 +48,8 @@ function PortionChoice({
 function MacroPreview({ grams, macros }: { grams: number; macros: LoggedMacros }) {
   return (
     <Text className="py-4 text-sm text-content-muted">
-      {Math.round(grams)} g · {Math.round(macros.kcal)} kcal · P{macros.protein} · C{macros.carbs}{' '}
-      · F{macros.fat}
+      {Math.round(grams)} g · {Math.round(macros.kcal)} kcal · P{macros.protein} · C{macros.carbs} ·
+      F{macros.fat}
     </Text>
   );
 }

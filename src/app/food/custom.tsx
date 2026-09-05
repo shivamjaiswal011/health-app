@@ -39,7 +39,11 @@ function MacroField({
   );
 }
 
-function MacroFields({ onChange }: { onChange: (key: keyof MacroValues) => (next: number | null) => void }) {
+function MacroFields({
+  onChange,
+}: {
+  onChange: (key: keyof MacroValues) => (next: number | null) => void;
+}) {
   return (
     <>
       <Text className="pb-1 text-xs font-semibold uppercase text-content-faint">Per 100 g</Text>

@@ -27,6 +27,12 @@ module.exports = defineConfig([
     },
   },
   {
+    // Seed data is a table, not logic. The file-length gate exists to catch modules
+    // doing too much; a catalogue of foods or exercises is one thing, at length.
+    files: ['src/db/seed/**/*.ts', 'src/domain/insights/insight-fixtures.ts'],
+    rules: { 'max-lines': 'off' },
+  },
+  {
     // Tests name their own fixtures; literals there are the point.
     files: ['src/**/*.test.ts'],
     rules: { 'no-magic-numbers': 'off', 'max-lines-per-function': 'off' },

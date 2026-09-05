@@ -109,9 +109,9 @@ export default function SettingsScreen() {
         </SettingRow>
 
         <Text className="pt-6 text-xs leading-4 text-content-faint">
-          Everything you log stays on this device. There is no account, no server, and nothing
-          is sent anywhere. Food data comes from USDA FoodData Central (public domain), with
-          Indian dishes composed from those ingredients.
+          Everything you log stays on this device. There is no account, no server, and nothing is
+          sent anywhere. Food data comes from USDA FoodData Central (public domain), with Indian
+          dishes composed from those ingredients.
         </Text>
       </ScrollView>
     </Screen>

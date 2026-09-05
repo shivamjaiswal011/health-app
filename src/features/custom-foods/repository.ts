@@ -92,7 +92,5 @@ export function customFoodPortionsQuery(foodId: string) {
   return database
     .select({ label: customFoodPortions.label, grams: customFoodPortions.grams })
     .from(customFoodPortions)
-    .where(
-      and(eq(customFoodPortions.customFoodId, foodId), isNull(customFoodPortions.deletedAt)),
-    );
+    .where(and(eq(customFoodPortions.customFoodId, foodId), isNull(customFoodPortions.deletedAt)));
 }

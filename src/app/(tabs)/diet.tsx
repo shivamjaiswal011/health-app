@@ -44,9 +44,7 @@ function DayNavigator({ day, onChange }: { day: string; onChange: (next: string)
 /** Offered only on an empty day, where it is the fastest way to fill one in. */
 function CopyYesterday({ day }: { day: string }) {
   function handleCopy() {
-    copyDay(shiftDay(day, -1), day).catch((cause) =>
-      announceFailure('Copying yesterday', cause),
-    );
+    copyDay(shiftDay(day, -1), day).catch((cause) => announceFailure('Copying yesterday', cause));
   }
 
   return (
