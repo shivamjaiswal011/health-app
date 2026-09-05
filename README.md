@@ -21,8 +21,20 @@ nothing to run, and your health data genuinely never leaves your device.
 ## What it does
 
 **Training.** A 90-exercise catalogue, routines with target sets and ordering, and a set
-logger that shows what you did last time behind each empty row. Rest timer, personal
-records, and a session you can force-quit mid-set without losing anything.
+logger that opens each row with what you lifted last time. Weights go in as kilograms or
+pounds — a gym marks its barbell one way and its leg press the other — and the unit
+follows the lift rather than a global setting. Rest timer, personal records, a session
+you can force-quit mid-set without losing anything, and every finished session readable
+afterwards.
+
+**Challenge mode.** Opt-in progressive overload. Each session asks for one more rep than
+the weakest working set managed last time; miss it and the same target is re-issued until
+it is cleared. Clear the top of the range and the weight rises by the smallest jump the
+equipment actually loads with, in that equipment's unit, and the reps restart at the
+bottom. A back-off set follows at 20% lighter for four more reps. Rep ranges default per
+muscle — calves and shoulders ladder higher than chest and back — and are overridable per
+exercise. No progression state is stored: the target is derived from what was logged, so
+correcting a past set corrects the next target with it.
 
 **Nutrition.** 8,114 USDA foods plus 30 Indian dishes with household portions, searched
 offline via FTS5. Custom foods, multi-ingredient recipes, one-tap repeats of anything you
@@ -33,7 +45,8 @@ training volume, and a dashboard covering both halves.
 
 **Setup.** A first run asks height, weight, activity and goal, derives calorie and macro
 targets from Mifflin-St Jeor, and records a first weigh-in so trends start on day one.
-Skippable, and every figure is editable afterwards.
+Skippable, and every figure is editable afterwards. A profile screen shows what you
+entered and the targets it produced.
 
 **Insights.** Ten rules over your own history, each stating the numbers behind it —
 including cross-domain observations neither log could make alone, like eating less on the
@@ -50,7 +63,7 @@ npm run ios        # or: npm run android
 ```
 
 ```sh
-npm test           # 185 tests
+npm test           # 308 tests
 npm run typecheck
 npm run lint
 ```
@@ -92,11 +105,31 @@ its data may be stored electronically to create a product, and being free and op
 is not an exemption. The reasoning is written up in
 [`docs/licensing/`](docs/licensing/) along with the permission request.
 
+## Installing it on a phone
+
+No App Store listing, and none planned — this is a personal app published as source. To
+run it on your own iPhone, plug the phone in and build a release straight to it:
+
+```sh
+npm install
+npx expo run:ios --device --configuration Release
+```
+
+Xcode will ask which device and which signing team. A free Apple ID works and needs no
+paid membership, with one catch: apps signed by a personal team stop launching after
+seven days and the same command re-signs them. A paid Apple Developer account raises that
+to a year.
+
+`--configuration Release` matters. Without it the app expects a Metro dev server on your
+laptop and will not open on its own.
+
 ## Status
 
-All six planned milestones are built and the app runs end to end. It has not been
-released, and two things are known-unfinished: the daily reminder toggle does not work,
-and swipe-to-delete on set rows is untested.
+Version 1.0.0. Everything above is built and works end to end, verified on the iOS
+simulator; 308 unit and integration tests cover the domain logic and the data layer.
+
+Three things are known-unfinished: the daily reminder toggle does not work, swipe-to-delete
+on set rows is untested on hardware, and past sessions are readable but not editable.
 
 ## Licence
 
