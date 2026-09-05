@@ -1,4 +1,5 @@
 import { planChallengeSets, type RepRange } from '@/domain/training/challenge';
+import { resolveRepRange } from '@/domain/training/rep-ranges';
 import { prefillFromPrevious, type PlannedSet, type PreviousSet } from '@/domain/training/prefill';
 import { loadPreviousPerformance } from '@/features/workout-logging/queries';
 import { startPlannedWorkout, type PlannedExercise } from '@/features/workout-logging/repository';
@@ -24,11 +25,13 @@ const FALLBACK_TARGET_SETS = 1;
 
 type RoutineEntry = Awaited<ReturnType<typeof loadRoutineExercises>>[number];
 
-/** A routine may pin a range per exercise; otherwise the configured default applies. */
+/** A routine may pin a range per exercise; otherwise the muscle's own default applies. */
 function repRangeFor(entry: RoutineEntry, settings: ChallengeSettings): RepRange {
-  const { targetRepsLow: low, targetRepsHigh: high } = entry;
-  if (low === null || high === null || high < low) return settings.defaultRange;
-  return { low, high };
+  return resolveRepRange({
+    pinned: { low: entry.targetRepsLow ?? undefined, high: entry.targetRepsHigh ?? undefined },
+    muscle: entry.primaryMuscle,
+    configured: settings.defaultRange,
+  });
 }
 
 type ExercisePlanRequest = {

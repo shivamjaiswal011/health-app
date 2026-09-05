@@ -8,9 +8,6 @@ const BACKOFF_KEY = 'challenge.backoff';
 const RANGE_LOW_KEY = 'challenge.range.low';
 const RANGE_HIGH_KEY = 'challenge.range.high';
 
-/** Eight to twelve: enough reps to progress through, few enough to finish a range. */
-export const DEFAULT_REP_RANGE: RepRange = { low: 8, high: 12 };
-
 const storage = createMMKV({ id: 'preferences' });
 
 /**
@@ -20,7 +17,12 @@ const storage = createMMKV({ id: 'preferences' });
  */
 export type ChallengeSettings = {
   backoffSets: boolean;
-  defaultRange: RepRange;
+  /**
+   * One range for every lift, or null to ladder each muscle through its own default.
+   * Null is the default: a calf raise and a bench press do not belong on the same
+   * ladder, and making the lifter set that per exercise is work they should not need.
+   */
+  defaultRange: RepRange | null;
 };
 
 function readFlag(key: string, fallback: boolean): boolean {
@@ -41,10 +43,11 @@ export function setChallengeEnabled(enabled: boolean): void {
   storage.set(ENABLED_KEY, enabled);
 }
 
-function readRange(): RepRange {
-  const low = storage.getNumber(RANGE_LOW_KEY) ?? DEFAULT_REP_RANGE.low;
-  const high = storage.getNumber(RANGE_HIGH_KEY) ?? DEFAULT_REP_RANGE.high;
-  return high >= low ? { low, high } : DEFAULT_REP_RANGE;
+function readRange(): RepRange | null {
+  const low = storage.getNumber(RANGE_LOW_KEY);
+  const high = storage.getNumber(RANGE_HIGH_KEY);
+  if (low === undefined || high === undefined || high < low) return null;
+  return { low, high };
 }
 
 export function challengeSettings(): ChallengeSettings {
@@ -58,4 +61,10 @@ export function setBackoffSets(enabled: boolean): void {
 export function setDefaultRepRange(range: RepRange): void {
   storage.set(RANGE_LOW_KEY, range.low);
   storage.set(RANGE_HIGH_KEY, range.high);
+}
+
+/** Hands every exercise back to its muscle's own default. */
+export function clearDefaultRepRange(): void {
+  storage.remove(RANGE_LOW_KEY);
+  storage.remove(RANGE_HIGH_KEY);
 }

@@ -1,29 +1,15 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 import { EQUIPMENT_TYPES } from '@/domain/training/equipment';
+import { MUSCLE_GROUPS, type MuscleGroup } from '@/domain/training/muscles';
 import { PERSONAL_RECORD_KINDS } from '@/domain/training/personal-records';
 import { WEIGHT_UNITS } from '@/domain/units/weight';
 
 import { syncColumns } from './shared';
 
-export { EQUIPMENT_TYPES };
+export { EQUIPMENT_TYPES, MUSCLE_GROUPS };
 export type { EquipmentType } from '@/domain/training/equipment';
-
-export const MUSCLE_GROUPS = [
-  'chest',
-  'back',
-  'shoulders',
-  'biceps',
-  'triceps',
-  'forearms',
-  'quads',
-  'hamstrings',
-  'glutes',
-  'calves',
-  'core',
-  'full_body',
-] as const;
-export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
+export type { MuscleGroup } from '@/domain/training/muscles';
 
 /**
  * How a set of this exercise is measured. Drives which inputs the logger shows —

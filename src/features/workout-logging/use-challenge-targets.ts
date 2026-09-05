@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 
-import { nextChallenge, type ChallengeTarget, type RepRange } from '@/domain/training/challenge';
+import { nextChallenge, type ChallengeTarget } from '@/domain/training/challenge';
+import { resolveRepRange } from '@/domain/training/rep-ranges';
 import { challengeEnabled, challengeSettings } from '@/features/settings/challenge';
-import { loadRoutineRepRanges } from '@/features/routines/queries';
+import { loadRoutineRepRanges, type PlannedRepRange } from '@/features/routines/queries';
 import { displayUnit } from '@/features/settings/units';
 import { reportFailure } from '@/ui/failure';
 
@@ -16,12 +17,6 @@ export type ChallengeTargetLookup = (
 
 const NO_TARGETS: ChallengeTargetLookup = () => null;
 
-function completeRange(pinned: Partial<RepRange>, fallback: RepRange): RepRange {
-  const low = pinned.low ?? fallback.low;
-  const high = pinned.high ?? fallback.high;
-  return high >= low ? { low, high } : fallback;
-}
-
 /**
  * What each exercise is being asked for this session.
  *
@@ -30,7 +25,7 @@ function completeRange(pinned: Partial<RepRange>, fallback: RepRange): RepRange 
  * set was logged would be a scoreboard of itself.
  */
 export function useChallengeTargets(workoutId: string): ChallengeTargetLookup {
-  const [ranges, setRanges] = useState<Map<string, Partial<RepRange>> | null>(null);
+  const [ranges, setRanges] = useState<Map<string, PlannedRepRange> | null>(null);
 
   useEffect(() => {
     let abandoned = false;
@@ -54,8 +49,9 @@ export function useChallengeTargets(workoutId: string): ChallengeTargetLookup {
     // Only the exercises the routine planned carry a target. An exercise added to the
     // session by hand was opened from history, not from the ladder, and claiming a
     // level for it would announce a target nothing actually set.
-    const pinned = ranges.get(exerciseId);
-    if (!pinned) return null;
-    return nextChallenge(completeRange(pinned, defaultRange), previous, displayUnit());
+    const planned = ranges.get(exerciseId);
+    if (!planned) return null;
+    const range = resolveRepRange({ ...planned, configured: defaultRange });
+    return nextChallenge(range, previous, displayUnit());
   };
 }

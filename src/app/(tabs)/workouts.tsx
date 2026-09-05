@@ -69,15 +69,15 @@ function HistoryEntry({ workout, isLast }: { workout: HistoryRow; isLast: boolea
  */
 function ChallengeCard() {
   const { enabled, settings } = useChallengeConfig();
-  const range = `${settings.defaultRange.low}–${settings.defaultRange.high} reps`;
+  const scheme = settings.defaultRange
+    ? `${settings.defaultRange.low}–${settings.defaultRange.high} reps on every lift`
+    : 'rep range tuned per muscle';
 
   return (
     <Card>
       <ListRow
         title="Challenge mode"
-        detail={
-          enabled ? `On · ${range} by default` : 'Off · progressive overload, session by session'
-        }
+        detail={enabled ? `On · ${scheme}` : 'Off · progressive overload, session by session'}
         onPress={() => router.push('/challenge')}
         isLast
       />

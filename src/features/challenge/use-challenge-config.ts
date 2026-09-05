@@ -7,6 +7,7 @@ import {
   setBackoffSets,
   setChallengeEnabled,
   setDefaultRepRange,
+  clearDefaultRepRange,
 } from '@/features/settings/challenge';
 
 /**
@@ -30,8 +31,10 @@ export function useChallengeConfig() {
     setSettings({ ...settings, backoffSets: next });
   }
 
-  function chooseRange(range: RepRange) {
-    setDefaultRepRange(range);
+  /** Null hands every exercise back to its muscle's own default. */
+  function chooseRange(range: RepRange | null) {
+    if (range) setDefaultRepRange(range);
+    else clearDefaultRepRange();
     setSettings({ ...settings, defaultRange: range });
   }
 

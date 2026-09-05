@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { database } from '@/db/client';
 import { exercises } from '@/db/schema';
+import type { MuscleGroup } from '@/domain/training/muscles';
 
 import * as repository from './repository';
 
@@ -29,6 +30,8 @@ export const TABLES_TO_CLEAR = [
 
 export const SQUAT = 'catalogue:squat';
 export const BENCH = 'catalogue:bench';
+/** A small muscle, to prove the default range follows the muscle rather than the app. */
+export const CALF_RAISE = 'catalogue:calf-raise';
 
 export async function applyMigrations(): Promise<void> {
   const journal = JSON.parse(
@@ -43,14 +46,18 @@ export async function applyMigrations(): Promise<void> {
   }
 }
 
-export async function seedExercise(id: string, name: string): Promise<void> {
+export async function seedExercise(
+  id: string,
+  name: string,
+  primaryMuscle: MuscleGroup = 'quads',
+): Promise<void> {
   const now = new Date();
   await database.insert(exercises).values({
     id,
     createdAt: now,
     updatedAt: now,
     name,
-    primaryMuscle: 'quads',
+    primaryMuscle,
     secondaryMuscles: [],
     equipment: 'barbell',
     trackingMode: 'weight_and_reps',
@@ -64,6 +71,7 @@ export async function resetDatabase(): Promise<void> {
   }
   await seedExercise(SQUAT, 'Back Squat');
   await seedExercise(BENCH, 'Bench Press');
+  await seedExercise(CALF_RAISE, 'Standing Calf Raise', 'calves');
 }
 
 /** A routine of exercises, each with a target set count, in the order given. */

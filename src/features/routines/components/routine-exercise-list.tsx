@@ -5,6 +5,7 @@ import ReorderableList, {
 import { Text, View } from 'react-native';
 
 import type { RepRange } from '@/domain/training/challenge';
+import { resolveRepRange } from '@/domain/training/rep-ranges';
 import { useChallengeConfig } from '@/features/challenge/use-challenge-config';
 import { EmptyState } from '@/ui/empty-state';
 import { announceFailure } from '@/ui/failure';
@@ -62,14 +63,14 @@ function useRoutineExerciseActions(rows: RoutineExerciseEntry[]) {
   function handleRepRange(
     entry: RoutineExerciseEntry,
     edit: Partial<RepRange>,
-    fallback: RepRange,
+    configured: RepRange | null,
   ) {
-    const low = edit.low ?? entry.targetRepsLow ?? fallback.low;
-    const high = edit.high ?? entry.targetRepsHigh ?? fallback.high;
-    if (high < low) return;
-    setRepRange(entry.id, { low, high }).catch((cause) =>
-      announceFailure('Setting the rep range', cause),
-    );
+    const pinned = {
+      low: edit.low ?? entry.targetRepsLow ?? undefined,
+      high: edit.high ?? entry.targetRepsHigh ?? undefined,
+    };
+    const range = resolveRepRange({ pinned, muscle: entry.primaryMuscle, configured });
+    setRepRange(entry.id, range).catch((cause) => announceFailure('Setting the rep range', cause));
   }
 
   function handleRemove(entryId: string) {
@@ -83,9 +84,12 @@ function useRoutineExerciseActions(rows: RoutineExerciseEntry[]) {
 
 export function RoutineExerciseList({ rows }: { rows: RoutineExerciseEntry[] }) {
   const { enabled, settings } = useChallengeConfig();
-  const defaultRange = enabled ? settings.defaultRange : null;
   const { handleReorder, handleTargetSets, handleRepRange, handleRemove } =
     useRoutineExerciseActions(rows);
+
+  /** What this exercise would ladder through if the lifter pinned nothing on it. */
+  const defaultFor = (entry: RoutineExerciseEntry) =>
+    resolveRepRange({ pinned: {}, muscle: entry.primaryMuscle, configured: settings.defaultRange });
 
   if (rows.length === 0) {
     return (
@@ -100,7 +104,7 @@ export function RoutineExerciseList({ rows }: { rows: RoutineExerciseEntry[] }) 
 
   return (
     <View className="mx-5 overflow-hidden rounded-2xl">
-      <ColumnHeadings showReps={defaultRange !== null} />
+      <ColumnHeadings showReps={enabled} />
       <ReorderableList
         data={rows}
         keyExtractor={(entry) => entry.id}
@@ -111,11 +115,9 @@ export function RoutineExerciseList({ rows }: { rows: RoutineExerciseEntry[] }) 
             entry={item}
             isLast={index === rows.length - 1}
             onChangeTargetSets={(target) => handleTargetSets(item.id, target)}
-            onChangeRepRange={(edit) =>
-              handleRepRange(item, edit, defaultRange ?? settings.defaultRange)
-            }
+            onChangeRepRange={(edit) => handleRepRange(item, edit, settings.defaultRange)}
             onRemove={() => handleRemove(item.id)}
-            defaultRange={defaultRange}
+            defaultRange={enabled ? defaultFor(item) : null}
           />
         )}
       />

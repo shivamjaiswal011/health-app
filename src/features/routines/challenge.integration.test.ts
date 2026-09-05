@@ -10,8 +10,9 @@ vi.mock('@/db/client', async () => {
 const { database } = await import('@/db/client');
 const { workoutSetsQuery } = await import('@/features/workout-logging/queries');
 const { startWorkoutFromRoutine } = await import('./start-from-routine');
-const { applyMigrations, buildRoutine, resetDatabase, SQUAT } =
+const { applyMigrations, buildRoutine, resetDatabase, CALF_RAISE, SQUAT } =
   await import('./routine-test-harness');
+const { repRangeForMuscle } = await import('@/domain/training/rep-ranges');
 const repository = await import('./repository');
 const workoutRepository = await import('@/features/workout-logging/repository');
 
@@ -25,6 +26,12 @@ beforeEach(resetDatabase);
 const CHALLENGE_PREFERENCES = {
   fallbackUnit: 'kg' as const,
   challenge: { backoffSets: true, defaultRange: { low: 8, high: 12 } },
+};
+
+/** No one range for every lift: each exercise ladders through its own muscle's default. */
+const PER_MUSCLE_PREFERENCES = {
+  fallbackUnit: 'kg' as const,
+  challenge: { backoffSets: false, defaultRange: null },
 };
 
 /** Ticks off every open set of the session at the given numbers, then finishes it. */
@@ -133,6 +140,30 @@ describe('challenge mode', () => {
     const [opened] = await workoutSetsQuery('w2');
     expect(opened.weightUnit).toBe('lb');
     expect(opened.weightKg).toBeCloseTo(45.36 + 5 / 2.20462262, 5);
+  });
+
+  it('ladders a calf raise higher than a squat when ranges follow the muscle', async () => {
+    await buildRoutine('r1', [
+      [SQUAT, 1],
+      [CALF_RAISE, 1],
+    ]);
+
+    await startWorkoutFromRoutine('r1', 'w1', PER_MUSCLE_PREFERENCES);
+
+    const opened = await workoutSetsQuery('w1');
+    expect(opened.map((set) => set.reps)).toEqual([
+      repRangeForMuscle('quads').low,
+      repRangeForMuscle('calves').low,
+    ]);
+  });
+
+  it('lets one configured range override every muscle default', async () => {
+    await buildRoutine('r1', [[CALF_RAISE, 1]]);
+
+    await startWorkoutFromRoutine('r1', 'w1', CHALLENGE_PREFERENCES);
+
+    const [opened] = await workoutSetsQuery('w1');
+    expect(opened.reps).toBe(8);
   });
 
   it('honours a rep range pinned on the routine over the configured default', async () => {

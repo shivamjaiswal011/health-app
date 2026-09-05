@@ -4,6 +4,7 @@ import { database } from '@/db/client';
 import { exercises, routineExercises, routines, workouts } from '@/db/schema';
 import type { RepRange } from '@/domain/training/challenge';
 import type { EquipmentType } from '@/domain/training/equipment';
+import type { MuscleGroup } from '@/domain/training/muscles';
 
 export function routineListQuery() {
   return database
@@ -31,6 +32,7 @@ export type RoutineExerciseEntry = {
   name: string;
   position: number;
   equipment: EquipmentType;
+  primaryMuscle: MuscleGroup;
   targetSets: number | null;
   /** The challenge-mode rep range. Null on both when the exercise uses the default. */
   targetRepsLow: number | null;
@@ -45,6 +47,7 @@ export function routineExercisesQuery(routineId: string) {
       name: exercises.name,
       position: routineExercises.position,
       equipment: exercises.equipment,
+      primaryMuscle: exercises.primaryMuscle,
       targetSets: routineExercises.targetSets,
       targetRepsLow: routineExercises.targetRepsLow,
       targetRepsHigh: routineExercises.targetRepsHigh,
@@ -65,20 +68,30 @@ export function loadRoutineExercises(routineId: string): Promise<RoutineExercise
  * exercise. Read by the logger to show the target it is asking for; an ad-hoc session
  * has no routine and so no ranges.
  */
+export type PlannedRepRange = { pinned: Partial<RepRange>; muscle: MuscleGroup };
+
 export async function loadRoutineRepRanges(
   workoutId: string,
-): Promise<Map<string, Partial<RepRange>>> {
+): Promise<Map<string, PlannedRepRange>> {
   const rows = await database
     .select({
       exerciseId: routineExercises.exerciseId,
       low: routineExercises.targetRepsLow,
       high: routineExercises.targetRepsHigh,
+      primaryMuscle: exercises.primaryMuscle,
     })
     .from(workouts)
     .innerJoin(routineExercises, eq(routineExercises.routineId, workouts.routineId))
+    .innerJoin(exercises, eq(routineExercises.exerciseId, exercises.id))
     .where(and(eq(workouts.id, workoutId), isNull(routineExercises.deletedAt)));
 
   return new Map(
-    rows.map((row) => [row.exerciseId, { low: row.low ?? undefined, high: row.high ?? undefined }]),
+    rows.map((row) => [
+      row.exerciseId,
+      {
+        pinned: { low: row.low ?? undefined, high: row.high ?? undefined },
+        muscle: row.primaryMuscle,
+      },
+    ]),
   );
 }

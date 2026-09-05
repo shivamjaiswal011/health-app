@@ -8,16 +8,31 @@ import { ListRow } from '@/ui/list-row';
 import { Screen } from '@/ui/screen';
 import { ScreenHeader } from '@/ui/screen-header';
 
-/** The ranges most programmes are written around, rather than a free-form number pair. */
-const RANGE_CHOICES: RepRange[] = [
+/**
+ * Per muscle sits first because it is the right answer for most lifters: a calf raise
+ * and a bench press do not belong on the same ladder. One range for everything stays
+ * available for a programme written that way.
+ */
+const RANGE_CHOICES: (RepRange | null)[] = [
+  null,
   { low: 3, high: 5 },
   { low: 6, high: 8 },
   { low: 8, high: 12 },
   { low: 12, high: 15 },
 ];
 
-function label(range: RepRange): string {
-  return `${range.low}–${range.high}`;
+function label(range: RepRange | null): string {
+  return range ? `${range.low}–${range.high} reps` : 'Tuned per muscle';
+}
+
+function detail(range: RepRange | null): string | undefined {
+  if (range) return undefined;
+  return 'Shoulders, calves and arms ladder higher than chest and back. Override any exercise in its routine.';
+}
+
+function sameRange(left: RepRange | null, right: RepRange | null): boolean {
+  if (!left || !right) return left === right;
+  return left.low === right.low && left.high === right.high;
 }
 
 function RangeChoice({
@@ -25,13 +40,15 @@ function RangeChoice({
   selected,
   onPress,
 }: {
-  range: RepRange;
+  range: RepRange | null;
   selected: boolean;
   onPress: () => void;
 }) {
   return (
     <ListRow
-      title={`${label(range)} reps`}
+      title={label(range)}
+      detail={detail(range)}
+      detailLines={2}
       onPress={onPress}
       showChevron={false}
       isLast={range === RANGE_CHOICES[RANGE_CHOICES.length - 1]}
@@ -80,15 +97,12 @@ export default function ChallengeScreen() {
         </Card>
 
         {enabled ? (
-          <Card title="Default rep range">
+          <Card title="Rep range">
             {RANGE_CHOICES.map((range) => (
               <RangeChoice
                 key={label(range)}
                 range={range}
-                selected={
-                  range.low === settings.defaultRange.low &&
-                  range.high === settings.defaultRange.high
-                }
+                selected={sameRange(range, settings.defaultRange)}
                 onPress={() => chooseRange(range)}
               />
             ))}
