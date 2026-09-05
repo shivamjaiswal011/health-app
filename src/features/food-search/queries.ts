@@ -63,10 +63,9 @@ const NORMALISED_NAME =
   "' ' || replace(replace(replace(replace(replace(lower(f.name), ',', ' '), '(', ' '), ')', ' '), '-', ' '), '/', ' ') || ' '";
 
 function buildSearchSql(termCount: number): string {
-  const wholeWordHits = Array.from(
-    { length: termCount },
-    () => `(${NORMALISED_NAME} LIKE ?)`,
-  ).join(' + ');
+  const wholeWordHits = Array.from({ length: termCount }, () => `(${NORMALISED_NAME} LIKE ?)`).join(
+    ' + ',
+  );
 
   return `
     SELECT f.id, f.name, f.source,

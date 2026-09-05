@@ -7,18 +7,26 @@ import { useColorScheme } from 'react-native';
  */
 const PALETTE = {
   light: {
-    surface: '#fafafa',
+    surface: '#f2f2f7',
     surfaceRaised: '#ffffff',
-    content: '#18181b',
-    contentFaint: '#8e8e96',
+    surfaceSunken: '#e9e9ee',
+    content: '#111113',
+    contentMuted: '#5a5a62',
+    contentFaint: '#8a8a93',
+    line: '#dcdce2',
     accent: '#2563eb',
+    danger: '#dc2626',
   },
   dark: {
-    surface: '#0c0c0e',
-    surfaceRaised: '#1a1a1e',
+    surface: '#0a0a0c',
+    surfaceRaised: '#1c1c20',
+    surfaceSunken: '#2a2a30',
     content: '#f4f4f5',
-    contentFaint: '#71717a',
+    contentMuted: '#a3a3ad',
+    contentFaint: '#787882',
+    line: '#34343c',
     accent: '#60a5fa',
+    danger: '#f87171',
   },
 } as const;
 

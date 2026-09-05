@@ -1,55 +1,65 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, Text, View } from 'react-native';
+import { useReorderableDrag } from 'react-native-reorderable-list';
 
+import { IconButton } from '@/ui/icon-button';
 import { NumberInput } from '@/ui/number-input';
+import { useThemeColor } from '@/ui/use-theme-color';
 
 import type { RoutineExerciseEntry } from '../queries';
 
-type RoutineExerciseRowProps = {
-  entry: RoutineExerciseEntry;
-  onMove: (direction: -1 | 1) => void;
-  onChangeTargetSets: (targetSets: number | null) => void;
-  onRemove: () => void;
-};
+const HANDLE_SIZE = 22;
 
-function MoveButton({ direction, onPress }: { direction: -1 | 1; onPress: () => void }) {
+/**
+ * Press-and-hold the handle to drag. Replaces a stacked pair of up/down arrows that
+ * took 64pt of row width to move one position at a time, and made reordering a
+ * five-exercise routine a chore rather than a gesture.
+ */
+function DragHandle() {
+  const drag = useReorderableDrag();
+  const faint = useThemeColor('contentFaint');
+
   return (
     <Pressable
-      onPress={onPress}
-      accessibilityLabel={direction === -1 ? 'Move up' : 'Move down'}
-      className="h-8 w-8 items-center justify-center rounded-md bg-surface-sunken active:opacity-60">
-      <Ionicons
-        name={direction === -1 ? 'chevron-up' : 'chevron-down'}
-        size={16}
-        color="rgb(113,113,122)"
-      />
+      onLongPress={drag}
+      delayLongPress={120}
+      accessibilityLabel="Drag to reorder"
+      hitSlop={12}
+      className="py-2 pr-1 active:opacity-50">
+      <Ionicons name="reorder-three-outline" size={HANDLE_SIZE} color={faint} />
     </Pressable>
   );
 }
 
 export function RoutineExerciseRow({
   entry,
-  onMove,
   onChangeTargetSets,
   onRemove,
-}: RoutineExerciseRowProps) {
+  isLast,
+}: {
+  entry: RoutineExerciseEntry;
+  onChangeTargetSets: (targetSets: number | null) => void;
+  onRemove: () => void;
+  isLast: boolean;
+}) {
   return (
-    <View className="flex-row items-center gap-3 border-b border-line px-4 py-3">
-      <View className="gap-1">
-        <MoveButton direction={-1} onPress={() => onMove(-1)} />
-        <MoveButton direction={1} onPress={() => onMove(1)} />
-      </View>
-      <Text className="flex-1 text-base text-content">{entry.name}</Text>
-      <View className="w-16">
+    <View
+      className={`flex-row items-center gap-3 bg-surface-raised py-2.5 pl-3 pr-2 ${
+        isLast ? '' : 'border-b border-line'
+      }`}>
+      <DragHandle />
+      <Text className="flex-1 text-base text-content" numberOfLines={2}>
+        {entry.name}
+      </Text>
+      <View className="w-14">
         <NumberInput
           defaultValue={entry.targetSets}
           onChangeValue={onChangeTargetSets}
-          placeholder="sets"
+          placeholder="3"
         />
       </View>
-      <Pressable onPress={onRemove} accessibilityLabel={`Remove ${entry.name}`} className="p-1">
-        <Ionicons name="close" size={20} color="rgb(220,38,38)" />
-      </Pressable>
+      <Text className="w-8 text-[13px] text-content-faint">sets</Text>
+      <IconButton name="close" label={`Remove ${entry.name}`} onPress={onRemove} />
     </View>
   );
 }

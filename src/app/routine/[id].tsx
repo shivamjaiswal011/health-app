@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -30,6 +30,10 @@ function confirmDelete(routineId: string) {
   ]);
 }
 
+/**
+ * The name field doubles as the screen's title, so there is no separate heading. Showing
+ * both meant the same words twice, forty points apart.
+ */
 function RoutineNameField({ routineId, name }: { routineId: string; name: string }) {
   const field = useAutosavedText(name, (next) => {
     renameRoutine(routineId, next.trim() || DEFAULT_ROUTINE_NAME).catch((cause) =>
@@ -43,7 +47,8 @@ function RoutineNameField({ routineId, name }: { routineId: string; name: string
       onChangeText={field.onChangeText}
       placeholder="Routine name"
       autoCorrect={false}
-      className="mx-5 h-12 rounded-xl bg-surface-sunken px-4 text-lg font-semibold text-content"
+      selectTextOnFocus
+      className="px-5 pb-1 text-[34px] font-bold leading-tight text-content"
     />
   );
 }
@@ -71,26 +76,13 @@ function useDiscardIfUntouched(routineId: string, isUntouched: boolean) {
   );
 }
 
-function RoutineActions({ routineId, canStart }: { routineId: string; canStart: boolean }) {
-  function handleStart() {
-    const workoutId = newId();
-    startWorkoutFromRoutine(routineId, workoutId)
-      .then(() => router.replace(`/workout/${workoutId}`))
-      .catch((cause) => announceFailure('Starting the workout', cause));
-  }
-
+function AddExerciseButton({ routineId }: { routineId: string }) {
   return (
-    <View className="gap-3 px-5 pt-4">
-      <Link href={{ pathname: '/routine/add-exercise', params: { routineId } }} asChild>
-        <Pressable className="items-center rounded-2xl border border-dashed border-line py-4 active:opacity-60">
-          <Text className="text-sm font-semibold text-accent">+ Add exercise</Text>
-        </Pressable>
-      </Link>
-      <Button label="Start workout" onPress={handleStart} disabled={!canStart} />
-      <Pressable onPress={() => confirmDelete(routineId)} className="items-center py-2">
-        <Text className="text-sm font-semibold text-danger">Delete routine</Text>
-      </Pressable>
-    </View>
+    <Pressable
+      onPress={() => router.push({ pathname: '/routine/add-exercise', params: { routineId } })}
+      className="mt-3 h-[50px] flex-row items-center justify-center rounded-2xl bg-surface-raised active:opacity-70">
+      <Text className="text-[17px] font-semibold text-accent">+ Add exercise</Text>
+    </Pressable>
   );
 }
 
@@ -103,19 +95,36 @@ export default function RoutineScreen() {
 
   useDiscardIfUntouched(id, entries.data.length === 0 && name === DEFAULT_ROUTINE_NAME);
 
+  function handleStart() {
+    const workoutId = newId();
+    startWorkoutFromRoutine(id, workoutId)
+      .then(() => router.replace(`/workout/${workoutId}`))
+      .catch((cause) => announceFailure('Starting the workout', cause));
+  }
+
   return (
     <Screen>
       <ScreenHeader right={{ label: 'Done', onPress: () => router.back() }} />
-      <Text className="px-5 pb-3 text-3xl font-bold text-content">{name || 'Routine'}</Text>
-      <ScrollView contentContainerClassName="pb-8" keyboardShouldPersistTaps="handled">
-        {/* Mounted only once the name has loaded: the field seeds its own state, so
-            rendering it against an empty query result would strand it blank. */}
-        {loaded && <RoutineNameField routineId={id} name={name} />}
-        <Text className="px-5 pb-4 pt-2 text-xs text-content-faint">
-          Changes are saved as you make them.
-        </Text>
+      {loaded ? <RoutineNameField routineId={id} name={name} /> : null}
+      <Text className="px-5 pb-5 text-[13px] text-content-faint">
+        Saved as you type. Hold the handle to reorder.
+      </Text>
+
+      <ScrollView contentContainerClassName="pb-10" keyboardShouldPersistTaps="handled">
         <RoutineExerciseList rows={entries.data} />
-        <RoutineActions routineId={id} canStart={entries.data.length > 0} />
+        <View className="px-5">
+          <AddExerciseButton routineId={id} />
+          <View className="pt-6">
+            <Button
+              label="Start workout"
+              onPress={handleStart}
+              disabled={entries.data.length === 0}
+            />
+          </View>
+          <View className="pt-8">
+            <Button label="Delete routine" variant="danger" onPress={() => confirmDelete(id)} />
+          </View>
+        </View>
       </ScrollView>
     </Screen>
   );

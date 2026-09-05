@@ -71,11 +71,9 @@ export function WeightCard() {
   const trend = rollingAverage(points, TREND_WINDOW_DAYS);
 
   return (
-    <View className="gap-3 rounded-2xl border border-line bg-surface-raised p-4">
+    <View className="gap-3 rounded-2xl bg-surface-raised p-4">
       <View className="flex-row items-center justify-between">
-        <Text className="text-xs font-semibold uppercase tracking-wide text-content-faint">
-          Bodyweight
-        </Text>
+        <Text className="text-[15px] font-semibold text-content">Bodyweight</Text>
         <Pressable onPress={() => setLogging(true)} className="active:opacity-60">
           <Text className="text-sm font-semibold text-accent">Log weight</Text>
         </Pressable>

@@ -27,7 +27,7 @@ function MacroBar({ label, consumed, target, unit }: BarProps) {
 
   return (
     <View className="flex-1 gap-1">
-      <Text className="text-[11px] uppercase text-content-faint">{label}</Text>
+      <Text className="text-[13px] font-medium text-content-faint">{label}</Text>
       <Text className="text-sm font-semibold text-content">
         {Math.round(consumed)}
         {target === null ? '' : ` / ${Math.round(target)}`}
@@ -45,9 +45,11 @@ function MacroBar({ label, consumed, target, unit }: BarProps) {
 /** The day at a glance. Targets are optional — totals are useful on their own. */
 export function MacroSummary({ totals, target }: { totals: Macros; target: MacroTarget | null }) {
   return (
-    <View className="gap-3 rounded-2xl border border-line bg-surface-raised p-4">
+    <View className="gap-4 rounded-2xl bg-surface-raised p-4">
       <View className="flex-row items-end justify-between">
-        <Text className="text-3xl font-bold text-content">{Math.round(totals.kcal)}</Text>
+        <Text className="text-[34px] font-bold leading-tight text-content">
+          {Math.round(totals.kcal)}
+        </Text>
         <Text className="text-sm text-content-faint">
           {target === null ? 'kcal' : `of ${Math.round(target.kcal)} kcal`}
         </Text>

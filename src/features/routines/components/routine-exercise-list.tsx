@@ -1,8 +1,13 @@
+import ReorderableList, {
+  reorderItems,
+  type ReorderableListReorderEvent,
+} from 'react-native-reorderable-list';
+import { Text, View } from 'react-native';
+
 import { EmptyState } from '@/ui/empty-state';
 import { announceFailure } from '@/ui/failure';
 
 import type { RoutineExerciseEntry } from '../queries';
-import { moveItem } from '../reorder';
 import { removeRoutineExercise, reorderRoutineExercises, setTargetSets } from '../repository';
 import { RoutineExerciseRow } from './routine-exercise-row';
 
@@ -10,9 +15,8 @@ const MINIMUM_TARGET_SETS = 1;
 
 /** Owns the routine's exercise mutations so the screen stays a composition. */
 export function RoutineExerciseList({ rows }: { rows: RoutineExerciseEntry[] }) {
-  function handleMove(index: number, direction: -1 | 1) {
-    const reordered = moveItem(rows, index, index + direction);
-    if (reordered === rows) return;
+  function handleReorder({ from, to }: ReorderableListReorderEvent) {
+    const reordered = reorderItems(rows, from, to);
     reorderRoutineExercises(reordered.map((row) => row.id)).catch((cause) =>
       announceFailure('Reordering the routine', cause),
     );
@@ -31,20 +35,36 @@ export function RoutineExerciseList({ rows }: { rows: RoutineExerciseEntry[] }) 
 
   if (rows.length === 0) {
     return (
-      <EmptyState
-        title="No exercises yet"
-        message="Add the lifts you want this routine to open with."
-      />
+      <View className="px-5">
+        <EmptyState
+          title="No exercises yet"
+          message="Add the lifts you want this routine to open with."
+        />
+      </View>
     );
   }
 
-  return rows.map((entry, index) => (
-    <RoutineExerciseRow
-      key={entry.id}
-      entry={entry}
-      onMove={(direction) => handleMove(index, direction)}
-      onChangeTargetSets={(target) => handleTargetSets(entry.id, target)}
-      onRemove={() => handleRemove(entry.id)}
-    />
-  ));
+  return (
+    <View className="mx-5 overflow-hidden rounded-2xl">
+      <View className="flex-row items-center bg-surface-raised px-3 pb-1 pt-3">
+        <Text className="flex-1 text-[13px] font-medium text-content-faint">Exercise</Text>
+        <Text className="text-[13px] font-medium text-content-faint">Target sets</Text>
+        <View className="w-9" />
+      </View>
+      <ReorderableList
+        data={rows}
+        keyExtractor={(entry) => entry.id}
+        onReorder={handleReorder}
+        scrollEnabled={false}
+        renderItem={({ item, index }) => (
+          <RoutineExerciseRow
+            entry={item}
+            isLast={index === rows.length - 1}
+            onChangeTargetSets={(target) => handleTargetSets(item.id, target)}
+            onRemove={() => handleRemove(item.id)}
+          />
+        )}
+      />
+    </View>
+  );
 }

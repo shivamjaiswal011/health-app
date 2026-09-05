@@ -26,8 +26,8 @@ function SettingRow({
   return (
     <View className="flex-row items-center gap-4 border-b border-line py-4">
       <View className="flex-1">
-        <Text className="text-base text-content">{title}</Text>
-        <Text className="mt-0.5 text-xs leading-4 text-content-muted">{detail}</Text>
+        <Text className="text-[17px] text-content">{title}</Text>
+        <Text className="mt-1 text-[13px] leading-[18px] text-content-muted">{detail}</Text>
       </View>
       {children}
     </View>
@@ -86,7 +86,7 @@ function BackupSetting() {
       title="Export your data"
       detail="Everything you have logged, as one JSON file. It goes wherever you send it — the app uploads nothing.">
       <Pressable onPress={handleExport} className="active:opacity-60">
-        <Text className="text-sm font-semibold text-accent">Export</Text>
+        <Text className="text-[17px] font-semibold text-accent">Export</Text>
       </Pressable>
     </SettingRow>
   );
@@ -97,18 +97,18 @@ export default function SettingsScreen() {
     <Screen>
       <ScreenHeader left={{ label: 'Back', onPress: () => router.back(), tone: 'muted' }} />
       <Text className="px-5 pb-3 text-3xl font-bold text-content">Settings</Text>
-      <ScrollView contentContainerClassName="px-5 pb-8">
+      <ScrollView contentContainerClassName="px-5 pb-10">
         <ReminderSetting />
         <BackupSetting />
         <SettingRow
           title="Daily targets"
           detail="Calories and macros. Applies from today onward; days already logged keep theirs.">
           <Pressable onPress={() => router.push('/diet/targets')} className="active:opacity-60">
-            <Text className="text-sm font-semibold text-accent">Edit</Text>
+            <Text className="text-[17px] font-semibold text-accent">Edit</Text>
           </Pressable>
         </SettingRow>
 
-        <Text className="pt-6 text-xs leading-4 text-content-faint">
+        <Text className="pt-8 text-[13px] leading-[19px] text-content-faint">
           Everything you log stays on this device. There is no account, no server, and nothing is
           sent anywhere. Food data comes from USDA FoodData Central (public domain), with Indian
           dishes composed from those ingredients.

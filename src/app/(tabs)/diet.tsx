@@ -12,6 +12,7 @@ import { MealSection, type DayEntry } from '@/features/diet/components/meal-sect
 import { dayEntriesQuery, targetForDayQuery } from '@/features/diet/queries';
 import { copyDay } from '@/features/diet/repository';
 import { announceFailure } from '@/ui/failure';
+import { ListRow } from '@/ui/list-row';
 import { Screen } from '@/ui/screen';
 
 function groupByMeal(entries: DayEntry[] & { mealSlot: MealSlot }[]) {
@@ -65,17 +66,19 @@ export default function DietScreen() {
   return (
     <Screen title="Diet">
       <DayNavigator day={day} onChange={setDay} />
-      <ScrollView contentContainerClassName="gap-4 px-5 pb-8">
+      <ScrollView contentContainerClassName="gap-4 px-5 pb-10">
         <Pressable onPress={() => router.push('/diet/targets')} className="active:opacity-70">
           <MacroSummary totals={totals} target={targets.data[0] ?? null} />
         </Pressable>
         {entries.data.length === 0 ? <CopyYesterday day={day} /> : null}
-        <Pressable
-          onPress={() => router.push('/recipe')}
-          className="flex-row items-center justify-between rounded-2xl border border-line bg-surface-raised px-4 py-3 active:opacity-60">
-          <Text className="text-sm font-semibold text-content">Recipes</Text>
-          <Text className="text-sm text-content-faint">›</Text>
-        </Pressable>
+        <View className="rounded-2xl bg-surface-raised px-4">
+          <ListRow
+            title="Recipes"
+            detail="Build a meal once, log it in one tap"
+            onPress={() => router.push('/recipe')}
+            isLast
+          />
+        </View>
         {MEAL_SLOTS.map((slot) => (
           <MealSection key={slot} slot={slot} day={day} entries={byMeal.get(slot) ?? []} />
         ))}

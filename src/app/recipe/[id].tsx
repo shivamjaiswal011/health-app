@@ -98,7 +98,7 @@ function ServingsRow({ recipeId, servings }: { recipeId: string; servings: numbe
 
 function PerServingCard({ composed }: { composed: ReturnType<typeof composeServing> }) {
   return (
-    <View className="mx-5 mb-4 rounded-2xl border border-line bg-surface-raised p-4">
+    <View className="mx-5 mb-4 rounded-2xl bg-surface-raised p-4">
       <Text className="text-xs font-semibold uppercase text-content-faint">Per serving</Text>
       <Text className="mt-1 text-2xl font-bold text-content">
         {Math.round(composed.perServing.kcal)} kcal

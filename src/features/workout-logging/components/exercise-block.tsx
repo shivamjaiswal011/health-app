@@ -1,9 +1,9 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { Alert, Pressable, Text, View } from 'react-native';
 
 import { newId } from '@/db/id';
 import { announceFailure } from '@/ui/failure';
+import { IconButton } from '@/ui/icon-button';
 
 import {
   addSet,
@@ -47,25 +47,24 @@ function confirmRemoveExercise(entry: WorkoutExerciseEntry) {
 
 function BlockHeader({ entry }: { entry: WorkoutExerciseEntry }) {
   return (
-    <View className="flex-row items-center justify-between px-4 pb-2 pt-3">
-      <Text className="flex-1 text-base font-semibold text-content">{entry.name}</Text>
-      <Pressable
+    <View className="flex-row items-center justify-between px-4 pb-1 pt-3">
+      <Text className="flex-1 text-[17px] font-semibold text-content">{entry.name}</Text>
+      <IconButton
+        name="ellipsis-horizontal"
+        label={`Remove ${entry.name}`}
         onPress={() => confirmRemoveExercise(entry)}
-        accessibilityLabel={`Remove ${entry.name}`}
-        className="p-1 active:opacity-60">
-        <Ionicons name="ellipsis-horizontal" size={18} color="rgb(113,113,122)" />
-      </Pressable>
+      />
     </View>
   );
 }
 
 function ColumnHeadings() {
   return (
-    <View className="flex-row items-center gap-2 px-4 pb-1">
-      <Text className="w-6 text-center text-[11px] uppercase text-content-faint">Set</Text>
-      <Text className="w-24 text-center text-[11px] uppercase text-content-faint">Previous</Text>
-      <Text className="flex-1 text-center text-[11px] uppercase text-content-faint">kg</Text>
-      <Text className="flex-1 text-center text-[11px] uppercase text-content-faint">Reps</Text>
+    <View className="flex-row items-center gap-2 px-4 pb-1.5">
+      <Text className="w-6 text-center text-[12px] font-medium text-content-faint">Set</Text>
+      <Text className="w-24 text-center text-[12px] font-medium text-content-faint">Previous</Text>
+      <Text className="flex-1 text-center text-[12px] font-medium text-content-faint">kg</Text>
+      <Text className="flex-1 text-center text-[12px] font-medium text-content-faint">Reps</Text>
       <View className="w-11" />
     </View>
   );
@@ -93,7 +92,7 @@ export function ExerciseBlock({ entry, workoutId, sets }: ExerciseBlockProps) {
   }
 
   return (
-    <View className="mb-4 overflow-hidden rounded-2xl border border-line bg-surface-raised">
+    <View className="mb-4 overflow-hidden rounded-2xl bg-surface-raised">
       <BlockHeader entry={entry} />
       <ColumnHeadings />
       {sets.map((set) => (
@@ -115,8 +114,8 @@ export function ExerciseBlock({ entry, workoutId, sets }: ExerciseBlockProps) {
           }
         />
       ))}
-      <Pressable onPress={handleAddSet} className="items-center py-3 active:opacity-60">
-        <Text className="text-sm font-semibold text-accent">+ Add set</Text>
+      <Pressable onPress={handleAddSet} className="items-center py-3.5 active:opacity-60">
+        <Text className="text-[15px] font-semibold text-accent">+ Add set</Text>
       </Pressable>
     </View>
   );

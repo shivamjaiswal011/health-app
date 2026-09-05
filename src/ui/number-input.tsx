@@ -37,7 +37,7 @@ export function NumberInput({ defaultValue, onChangeValue, placeholder }: Number
       placeholder={placeholder}
       keyboardType="decimal-pad"
       selectTextOnFocus
-      className="h-11 rounded-lg border border-line bg-surface-sunken px-3 text-center text-base font-medium text-content"
+      className="h-11 rounded-xl bg-surface-sunken px-2 text-center text-[17px] font-semibold text-content"
     />
   );
 }

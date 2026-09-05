@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text } from 'react-native';
 
 import { newId } from '@/db/id';
 import { defaultWorkoutName } from '@/domain/training/workout-name';
@@ -11,6 +11,7 @@ import { activeWorkoutQuery, workoutHistoryQuery } from '@/features/workout-logg
 import { startWorkout } from '@/features/workout-logging/repository';
 import { Button } from '@/ui/button';
 import { Card } from '@/ui/card';
+import { ListRow } from '@/ui/list-row';
 import { announceFailure } from '@/ui/failure';
 import { Screen } from '@/ui/screen';
 
@@ -46,25 +47,48 @@ function ResumeBanner({ workoutId, name }: { workoutId: string; name: string }) 
   );
 }
 
-function RoutineRow({ id, name }: { id: string; name: string }) {
+function RoutineRow({ id, name, isLast }: { id: string; name: string; isLast: boolean }) {
+  return <ListRow title={name} onPress={() => router.push(`/routine/${id}`)} isLast={isLast} />;
+}
+
+function HistoryEntry({ workout, isLast }: { workout: HistoryRow; isLast: boolean }) {
   return (
-    <Pressable
-      onPress={() => router.push(`/routine/${id}`)}
-      className="flex-row items-center justify-between border-b border-line py-3 active:opacity-60">
-      <Text className="text-base text-content">{name}</Text>
-      <Text className="text-sm text-content-faint">›</Text>
-    </Pressable>
+    <ListRow
+      title={workout.name}
+      detail={format(workout.startedAt, 'EEE d MMM · HH:mm')}
+      showChevron={false}
+      isLast={isLast}
+    />
   );
 }
 
-function HistoryEntry({ workout }: { workout: HistoryRow }) {
+function RoutinesSection({ routines }: { routines: { id: string; name: string }[] }) {
   return (
-    <View className="border-b border-line py-3">
-      <Text className="text-base text-content">{workout.name}</Text>
-      <Text className="mt-0.5 text-xs text-content-faint">
-        {format(workout.startedAt, 'EEE d MMM · HH:mm')}
-      </Text>
-    </View>
+    <Card
+      title="Routines"
+      action={
+        <Pressable
+          onPress={() => beginNewRoutine(routines.length)}
+          hitSlop={10}
+          className="active:opacity-60">
+          <Text className="text-[15px] font-semibold text-accent">New</Text>
+        </Pressable>
+      }>
+      {routines.length === 0 ? (
+        <Text className="py-5 text-center text-[15px] text-content-muted">
+          Save a workout as a routine, or start one here.
+        </Text>
+      ) : (
+        routines.map((routine, index) => (
+          <RoutineRow
+            key={routine.id}
+            id={routine.id}
+            name={routine.name}
+            isLast={index === routines.length - 1}
+          />
+        ))
+      )}
+    </Card>
   );
 }
 
@@ -76,28 +100,23 @@ export default function WorkoutsScreen() {
 
   return (
     <Screen title="Train">
-      <ScrollView contentContainerClassName="gap-4 px-5 pb-8">
+      <ScrollView contentContainerClassName="gap-6 px-5 pb-10">
         {inProgress ? (
           <ResumeBanner workoutId={inProgress.id} name={inProgress.name} />
         ) : (
           <Button label="Start empty workout" onPress={beginEmptySession} />
         )}
 
-        <Card title="Routines">
-          {routines.data.map((routine) => (
-            <RoutineRow key={routine.id} id={routine.id} name={routine.name} />
-          ))}
-          <Pressable
-            onPress={() => beginNewRoutine(routines.data.length)}
-            className="items-center py-3 active:opacity-60">
-            <Text className="text-sm font-semibold text-accent">+ New routine</Text>
-          </Pressable>
-        </Card>
+        <RoutinesSection routines={routines.data} />
 
         {history.data.length > 0 && (
           <Card title="History">
-            {history.data.map((workout) => (
-              <HistoryEntry key={workout.id} workout={workout} />
+            {history.data.map((workout, index) => (
+              <HistoryEntry
+                key={workout.id}
+                workout={workout}
+                isLast={index === history.data.length - 1}
+              />
             ))}
           </Card>
         )}

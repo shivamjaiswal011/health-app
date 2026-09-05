@@ -2,8 +2,9 @@ import { Pressable, Text } from 'react-native';
 
 const VARIANT_CLASSES = {
   primary: { container: 'bg-accent', label: 'text-white' },
-  secondary: { container: 'bg-surface-raised border border-line', label: 'text-content' },
-  danger: { container: 'bg-danger', label: 'text-white' },
+  secondary: { container: 'bg-surface-sunken', label: 'text-content' },
+  ghost: { container: '', label: 'text-accent' },
+  danger: { container: '', label: 'text-danger' },
 } as const;
 
 export type ButtonVariant = keyof typeof VARIANT_CLASSES;
@@ -15,7 +16,13 @@ type ButtonProps = {
   disabled?: boolean;
 };
 
-/** Full-width tappable action. Height is fixed at 48pt to stay thumb-reachable mid-set. */
+/**
+ * Full-width action. Height is fixed at 50pt — comfortably past the 44pt floor, because
+ * the primary action is often pressed mid-set with one hand.
+ *
+ * `ghost` and `danger` carry no fill: a destructive action should not compete visually
+ * with the thing the user actually came to do.
+ */
 export function Button({ label, onPress, variant = 'primary', disabled = false }: ButtonProps) {
   const classes = VARIANT_CLASSES[variant];
   return (
@@ -23,8 +30,8 @@ export function Button({ label, onPress, variant = 'primary', disabled = false }
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      className={`h-12 items-center justify-center rounded-xl px-5 active:opacity-70 ${classes.container} ${disabled ? 'opacity-40' : ''}`}>
-      <Text className={`text-base font-semibold ${classes.label}`}>{label}</Text>
+      className={`h-[50px] items-center justify-center rounded-2xl px-5 active:opacity-70 ${classes.container} ${disabled ? 'opacity-40' : ''}`}>
+      <Text className={`text-[17px] font-semibold ${classes.label}`}>{label}</Text>
     </Pressable>
   );
 }

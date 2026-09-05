@@ -9,6 +9,9 @@ import { InsightList } from '@/features/insights/components/insight-card';
 import { useInsights } from '@/features/insights/use-insights';
 import { bodyWeightQuery, weeklyVolumeQuery } from '@/features/progress/queries';
 import { activeWorkoutQuery, workoutHistoryQuery } from '@/features/workout-logging/queries';
+import { Card } from '@/ui/card';
+import { IconButton } from '@/ui/icon-button';
+import { ListRow } from '@/ui/list-row';
 import { Screen } from '@/ui/screen';
 
 function SummaryTile({
@@ -25,12 +28,10 @@ function SummaryTile({
   return (
     <Pressable
       onPress={onPress}
-      className="flex-1 rounded-2xl border border-line bg-surface-raised p-4 active:opacity-70">
-      <Text className="text-[11px] font-semibold uppercase tracking-wide text-content-faint">
-        {label}
-      </Text>
-      <Text className="mt-1 text-2xl font-bold text-content">{value}</Text>
-      <Text className="mt-0.5 text-xs text-content-muted" numberOfLines={1}>
+      className="flex-1 rounded-2xl bg-surface-raised p-4 active:opacity-70">
+      <Text className="text-[13px] font-medium text-content-muted">{label}</Text>
+      <Text className="mt-1.5 text-[28px] font-bold leading-tight text-content">{value}</Text>
+      <Text className="mt-0.5 text-[13px] text-content-faint" numberOfLines={1}>
         {detail}
       </Text>
     </Pressable>
@@ -104,8 +105,16 @@ export default function TodayScreen() {
   const inProgress = active.data[0];
 
   return (
-    <Screen title="Today">
-      <ScrollView contentContainerClassName="gap-3 px-5 pb-8">
+    <Screen
+      title="Today"
+      action={
+        <IconButton
+          name="settings-outline"
+          label="Settings"
+          onPress={() => router.push('/settings')}
+        />
+      }>
+      <ScrollView contentContainerClassName="gap-4 px-5 pb-10">
         {inProgress ? <ResumeBanner workoutId={inProgress.id} name={inProgress.name} /> : null}
 
         <View className="flex-row gap-3">
@@ -124,22 +133,14 @@ export default function TodayScreen() {
 
         <InsightList insights={insights} />
 
-        <Pressable
-          onPress={() => router.push('/settings')}
-          className="items-center py-2 active:opacity-60">
-          <Text className="text-sm font-semibold text-accent">Settings</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push('/workouts')}
-          className="rounded-2xl border border-line bg-surface-raised px-4 py-3 active:opacity-70">
-          <Text className="text-[11px] font-semibold uppercase tracking-wide text-content-faint">
-            Last session
-          </Text>
-          <Text className="mt-1 text-base text-content">
-            {summary.lastWorkout ? summary.lastWorkout.name : 'Nothing logged yet'}
-          </Text>
-        </Pressable>
+        <Card title="Last session">
+          <ListRow
+            title={summary.lastWorkout ? summary.lastWorkout.name : 'Nothing logged yet'}
+            detail={summary.lastWorkout ? 'View training history' : 'Start one from the Train tab'}
+            onPress={() => router.push('/workouts')}
+            isLast
+          />
+        </Card>
       </ScrollView>
     </Screen>
   );

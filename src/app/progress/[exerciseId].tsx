@@ -67,7 +67,7 @@ export default function ExerciseProgressScreen() {
             message="Two sessions with weight and reps recorded are needed before a trend means anything."
           />
         ) : (
-          <View className="gap-3 rounded-2xl border border-line bg-surface-raised p-4">
+          <View className="gap-3 rounded-2xl bg-surface-raised p-4">
             <EstimatedMaxSummary trend={trend} />
             <TrendChart points={sessions} trend={trend} color={faint} trendColor={accent} />
           </View>

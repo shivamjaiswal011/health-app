@@ -72,17 +72,17 @@ export function MealSection({ slot, day, entries }: MealSectionProps) {
   const kcal = entries.reduce((running, entry) => running + entry.kcal, 0);
 
   return (
-    <View className="rounded-2xl border border-line bg-surface-raised px-4 py-3">
+    <View className="rounded-2xl bg-surface-raised px-4 py-3">
       <View className="flex-row items-center justify-between">
-        <Text className="text-sm font-semibold text-content">{MEAL_TITLES[slot]}</Text>
-        <Text className="text-xs text-content-faint">{Math.round(kcal)} kcal</Text>
+        <Text className="text-[17px] font-semibold text-content">{MEAL_TITLES[slot]}</Text>
+        <Text className="text-[13px] text-content-faint">{Math.round(kcal)} kcal</Text>
       </View>
       {entries.map((entry) => (
         <EntryRow key={entry.id} entry={entry} />
       ))}
       <Link href={{ pathname: '/food/search', params: { day, slot } }} asChild>
         <Pressable className="pt-3 active:opacity-60">
-          <Text className="text-sm font-semibold text-accent">+ Add food</Text>
+          <Text className="text-[15px] font-semibold text-accent">+ Add food</Text>
         </Pressable>
       </Link>
     </View>
