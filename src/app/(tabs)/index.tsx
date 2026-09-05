@@ -13,6 +13,8 @@ import { Card } from '@/ui/card';
 import { IconButton } from '@/ui/icon-button';
 import { ListRow } from '@/ui/list-row';
 import { Screen } from '@/ui/screen';
+import { formatWeightTotal, toDisplayWeight } from '@/domain/units/weight';
+import { bodyweightUnit, displayUnit } from '@/features/settings/units';
 
 function SummaryTile({
   label,
@@ -87,12 +89,12 @@ function tiles(summary: DaySummary): Record<string, TileContent> {
     training: {
       value: thisWeek ? `${thisWeek.setCount}` : '0',
       detail: thisWeek
-        ? `sets · ${Math.round(thisWeek.volume).toLocaleString()} kg`
+        ? `sets · ${formatWeightTotal(thisWeek.volume, displayUnit())}`
         : 'sets logged',
     },
     weight: {
-      value: weighed ? weighed.toFixed(1) : '—',
-      detail: weighed ? 'kg, last weigh-in' : 'not logged yet',
+      value: weighed ? String(toDisplayWeight(weighed, bodyweightUnit())) : '—',
+      detail: weighed ? `${bodyweightUnit()}, last weigh-in` : 'not logged yet',
     },
   };
 }

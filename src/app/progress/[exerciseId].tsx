@@ -11,6 +11,8 @@ import {
   type SeriesPoint,
 } from '@/domain/progress/time-series';
 import { bestOneRepMaxByDay } from '@/domain/training/strength-series';
+import { formatWeight, formatWeightChange } from '@/domain/units/weight';
+import { displayUnit } from '@/features/settings/units';
 import { TrendChart } from '@/features/progress/components/trend-chart';
 import { exerciseHistoryQuery } from '@/features/progress/queries';
 import { EmptyState } from '@/ui/empty-state';
@@ -33,14 +35,15 @@ const TREND_WINDOW_DAYS = 21;
 function EstimatedMaxSummary({ trend }: { trend: SeriesPoint[] }) {
   const change = describeChange(trend);
   const current = trend[trend.length - 1];
+  const unit = displayUnit();
 
   return (
     <View className="pb-2">
-      <Text className="text-2xl font-bold text-content">{Math.round(current.value)} kg</Text>
+      <Text className="text-2xl font-bold text-content">{formatWeight(current.value, unit)}</Text>
       <Text className="mt-0.5 text-xs text-content-muted">
         estimated one-rep max, smoothed
         {change
-          ? ` · ${change.delta >= 0 ? '+' : ''}${Math.round(change.delta)} kg since ${format(trend[0].at, 'd MMM')}`
+          ? ` · ${formatWeightChange(change.delta, unit)} since ${format(trend[0].at, 'd MMM')}`
           : ''}
       </Text>
     </View>

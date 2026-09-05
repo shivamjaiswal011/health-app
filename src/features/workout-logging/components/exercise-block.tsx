@@ -3,6 +3,7 @@ import { Alert, Pressable, Text, View } from 'react-native';
 
 import { newId } from '@/db/id';
 import { prefillFromPrevious } from '@/domain/training/prefill';
+import { displayUnit } from '@/features/settings/units';
 import { announceFailure } from '@/ui/failure';
 import { IconButton } from '@/ui/icon-button';
 
@@ -65,7 +66,7 @@ function ColumnHeadings() {
     <View className="flex-row items-center gap-2 px-4 pb-1.5">
       <Text className="w-6 text-center text-[12px] font-medium text-content-faint">Set</Text>
       <Text className="w-24 text-center text-[12px] font-medium text-content-faint">Previous</Text>
-      <Text className="flex-1 text-center text-[12px] font-medium text-content-faint">kg</Text>
+      <Text className="flex-1 text-center text-[12px] font-medium text-content-faint">Weight</Text>
       <Text className="flex-1 text-center text-[12px] font-medium text-content-faint">Reps</Text>
       <View className="w-11" />
     </View>
@@ -78,10 +79,13 @@ function useSetActions(entry: WorkoutExerciseEntry, previous: PreviousSet[], set
 
   function handleAddSet() {
     // A set added by hand opens the same way a planned one does: with what was lifted
-    // in this slot last time, if there was one.
+    // in this slot last time, if there was one. The matching set is renumbered to the
+    // first slot because the prefill is asked for a single set, which it fills from
+    // position zero.
     const [opening] = prefillFromPrevious(
       1,
-      previous.filter((set) => set.position === setCount),
+      previous.filter((set) => set.position === setCount).map((set) => ({ ...set, position: 0 })),
+      displayUnit(),
     );
     addSet({
       id: newId(),
@@ -90,6 +94,7 @@ function useSetActions(entry: WorkoutExerciseEntry, previous: PreviousSet[], set
       position: setCount,
       setType: 'working' as const,
       weightKg: opening?.weightKg ?? null,
+      weightUnit: opening?.weightUnit,
       reps: opening?.reps ?? null,
     }).catch((cause) => announceFailure('Adding a set', cause));
   }

@@ -5,6 +5,7 @@ import { newId } from '@/db/id';
 import { logChange, withTimestamps, type Executor } from '@/db/mutation';
 import { sets, workoutExercises, workouts } from '@/db/schema';
 import type { PlannedSet } from '@/domain/training/prefill';
+import type { WeightUnit } from '@/domain/units/weight';
 import type { SetType } from '@/db/schema';
 
 const WORKOUTS = 'workouts';
@@ -57,10 +58,11 @@ async function insertPlannedExercise(tx: Executor, placement: PlannedExercisePla
         workoutExerciseId: entryId,
         exerciseId: planned.exerciseId,
         position: slot,
-        setType: 'working' as const,
+        setType: planningSet.setType,
         // Opened with last session's numbers but deliberately not completed: the
         // lifter still ticks every set, so nothing is recorded that was not done.
         weightKg: planningSet.weightKg,
+        weightUnit: planningSet.weightUnit,
         reps: planningSet.reps,
       }),
     );
@@ -114,6 +116,7 @@ export type NewSet = {
   position: number;
   setType: SetType;
   weightKg?: number | null;
+  weightUnit?: WeightUnit;
   reps?: number | null;
 };
 
@@ -131,6 +134,7 @@ export async function addSet(set: NewSet): Promise<void> {
 
 export type SetValues = {
   weightKg: number | null;
+  weightUnit?: WeightUnit;
   reps: number | null;
   rpe?: number | null;
   durationSeconds?: number | null;

@@ -17,6 +17,8 @@ const { loadPreviousPerformance, workoutExercisesQuery, workoutSetsQuery } =
   await import('@/features/workout-logging/queries');
 const { routineExercisesQuery, routineListQuery } = await import('./queries');
 const { startWorkoutFromRoutine } = await import('./start-from-routine');
+
+const KILOGRAM_PREFERENCES = { fallbackUnit: 'kg' as const };
 const { saveWorkoutAsRoutine } = await import('./save-as-routine');
 const repository = await import('./repository');
 const workoutRepository = await import('@/features/workout-logging/repository');
@@ -206,7 +208,7 @@ describe('starting a workout from a routine', () => {
       [SQUAT, 3],
       [BENCH, 4],
     ]);
-    await startWorkoutFromRoutine('r1', 'w1');
+    await startWorkoutFromRoutine('r1', 'w1', KILOGRAM_PREFERENCES);
 
     const entries = await workoutExercisesQuery('w1');
 
@@ -218,7 +220,7 @@ describe('starting a workout from a routine', () => {
       [SQUAT, 3],
       [BENCH, 4],
     ]);
-    await startWorkoutFromRoutine('r1', 'w1');
+    await startWorkoutFromRoutine('r1', 'w1', KILOGRAM_PREFERENCES);
 
     const logged = await workoutSetsQuery('w1');
 
@@ -228,7 +230,7 @@ describe('starting a workout from a routine', () => {
 
   it('records which routine the session came from', async () => {
     await buildRoutine('r1', [[SQUAT, 1]]);
-    await startWorkoutFromRoutine('r1', 'w1');
+    await startWorkoutFromRoutine('r1', 'w1', KILOGRAM_PREFERENCES);
 
     const [workout] = await database.select().from(workouts).where(eq(workouts.id, 'w1'));
 
@@ -238,7 +240,7 @@ describe('starting a workout from a routine', () => {
 
   it('copies the plan rather than referencing it, so later edits do not rewrite history', async () => {
     await buildRoutine('r1', [[SQUAT, 2]]);
-    await startWorkoutFromRoutine('r1', 'w1');
+    await startWorkoutFromRoutine('r1', 'w1', KILOGRAM_PREFERENCES);
 
     await repository.removeRoutineExercise('r1-0');
     await repository.renameRoutine('r1', 'Renamed');
@@ -250,7 +252,7 @@ describe('starting a workout from a routine', () => {
 
   it('opens each set with what was lifted last time', async () => {
     await buildRoutine('r1', [[SQUAT, 2]]);
-    await startWorkoutFromRoutine('r1', 'w1');
+    await startWorkoutFromRoutine('r1', 'w1', KILOGRAM_PREFERENCES);
 
     // Perform the session, then finish it so it counts as history.
     const logged = await workoutSetsQuery('w1');
@@ -258,7 +260,7 @@ describe('starting a workout from a routine', () => {
     await workoutRepository.completeSet(logged[1].id, { weightKg: 105, reps: 4 });
     await workoutRepository.finishWorkout('w1');
 
-    await startWorkoutFromRoutine('r1', 'w2');
+    await startWorkoutFromRoutine('r1', 'w2', KILOGRAM_PREFERENCES);
 
     const opened = await workoutSetsQuery('w2');
     expect(opened.map((set) => [set.weightKg, set.reps])).toEqual([
@@ -269,32 +271,32 @@ describe('starting a workout from a routine', () => {
 
   it('leaves the pre-filled sets uncompleted, so nothing counts as performed', async () => {
     await buildRoutine('r1', [[SQUAT, 1]]);
-    await startWorkoutFromRoutine('r1', 'w1');
+    await startWorkoutFromRoutine('r1', 'w1', KILOGRAM_PREFERENCES);
     const [first] = await workoutSetsQuery('w1');
     await workoutRepository.completeSet(first.id, { weightKg: 100, reps: 5 });
     await workoutRepository.finishWorkout('w1');
 
-    await startWorkoutFromRoutine('r1', 'w2');
+    await startWorkoutFromRoutine('r1', 'w2', KILOGRAM_PREFERENCES);
 
     const [opened] = await workoutSetsQuery('w2');
     expect(opened.weightKg).toBe(100);
     expect(opened.completedAt).toBeNull();
     // And so the new session contributes nothing to history until it is ticked off.
     expect(await loadPreviousPerformance(SQUAT, 'w3')).toEqual([
-      { position: 0, weightKg: 100, reps: 5 },
+      { position: 0, weightKg: 100, weightUnit: 'kg', reps: 5 },
     ]);
   });
 
   it('opens blank the first time an exercise is trained', async () => {
     await buildRoutine('r1', [[BENCH, 2]]);
-    await startWorkoutFromRoutine('r1', 'w1');
+    await startWorkoutFromRoutine('r1', 'w1', KILOGRAM_PREFERENCES);
 
     const opened = await workoutSetsQuery('w1');
     expect(opened.every((set) => set.weightKg === null && set.reps === null)).toBe(true);
   });
 
   it('refuses to start from a routine that no longer exists', async () => {
-    await expect(startWorkoutFromRoutine('missing', 'w1')).rejects.toThrow(/no longer exists/);
+    await expect(startWorkoutFromRoutine('missing', 'w1', KILOGRAM_PREFERENCES)).rejects.toThrow(/no longer exists/);
   });
 
   it('skips an entry whose exercise no longer exists rather than failing to start', async () => {
@@ -313,7 +315,7 @@ describe('starting a workout from a routine', () => {
     });
     await database.run('PRAGMA foreign_keys = ON');
 
-    await startWorkoutFromRoutine('r1', 'w1');
+    await startWorkoutFromRoutine('r1', 'w1', KILOGRAM_PREFERENCES);
 
     // The join against exercises drops the dangling entry, so the session still opens.
     expect(await workoutExercisesQuery('w1')).toHaveLength(1);

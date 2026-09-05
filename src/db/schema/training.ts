@@ -1,6 +1,7 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 import { PERSONAL_RECORD_KINDS } from '@/domain/training/personal-records';
+import { WEIGHT_UNITS } from '@/domain/units/weight';
 
 import { syncColumns } from './shared';
 
@@ -123,7 +124,8 @@ export const workoutExercises = sqliteTable(
   (table) => [index('idx_workout_exercises_workout').on(table.workoutId, table.position)],
 );
 
-export const SET_TYPES = ['working', 'warmup', 'drop', 'failure'] as const;
+/** `backoff` is the lighter high-rep set challenge mode appends after the working sets. */
+export const SET_TYPES = ['working', 'warmup', 'drop', 'failure', 'backoff'] as const;
 export type SetType = (typeof SET_TYPES)[number];
 
 /**
@@ -144,6 +146,8 @@ export const sets = sqliteTable(
     position: integer('position').notNull(),
     setType: text('set_type', { enum: SET_TYPES }).notNull().default('working'),
     weightKg: real('weight_kg'),
+    /** How the lifter entered it. The stored value is kilograms either way. */
+    weightUnit: text('weight_unit', { enum: WEIGHT_UNITS }).notNull().default('kg'),
     reps: integer('reps'),
     rpe: real('rpe'),
     durationSeconds: integer('duration_seconds'),

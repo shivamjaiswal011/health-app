@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
+import { formatWeight, type WeightUnit } from '@/domain/units/weight';
 import { NumberInput } from '@/ui/number-input';
 import { useDebouncedCallback } from '@/ui/use-debounced-callback';
+import { WeightInput, type EnteredWeight } from '@/ui/weight-input';
 
 import type { PreviousSet } from '../queries';
 import type { SetValues } from '../repository';
@@ -16,6 +18,7 @@ export type LoggedSet = {
   id: string;
   position: number;
   weightKg: number | null;
+  weightUnit: WeightUnit;
   reps: number | null;
   completedAt: Date | null;
 };
@@ -31,11 +34,15 @@ type SetRowProps = {
   onRemove: () => void;
 };
 
-/** Last session's numbers for this slot, shown so the lifter knows what to beat. */
+/**
+ * Last session's numbers for this slot, shown so the lifter knows what to beat — in the
+ * unit it was entered in, because a lifter comparing against a machine marked in pounds
+ * should not have to notice that the app silently converted.
+ */
 function previousLabel(previous: PreviousSet | undefined): string {
   if (!previous) return '—';
   if (previous.weightKg === null) return `${previous.reps ?? '—'} reps`;
-  return `${previous.weightKg} × ${previous.reps}`;
+  return `${formatWeight(previous.weightKg, previous.weightUnit)} × ${previous.reps}`;
 }
 
 function RemoveAction({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -62,20 +69,21 @@ function SetLabels({ position, previous }: { position: number; previous?: Previo
 }
 
 type ValueFieldsProps = {
+  weight: EnteredWeight;
   set: LoggedSet;
   previous: PreviousSet | undefined;
-  onWeight: (value: number | null) => void;
+  onWeight: (entered: EnteredWeight) => void;
   onReps: (value: number | null) => void;
 };
 
-function ValueFields({ set, previous, onWeight, onReps }: ValueFieldsProps) {
+function ValueFields({ weight, set, previous, onWeight, onReps }: ValueFieldsProps) {
   return (
     <>
       <View className="flex-1">
-        <NumberInput
-          defaultValue={set.weightKg}
-          onChangeValue={onWeight}
-          placeholder={previous?.weightKg?.toString() ?? 'kg'}
+        <WeightInput
+          value={weight}
+          placeholderKg={previous?.weightKg ?? null}
+          onChangeWeight={onWeight}
         />
       </View>
       <View className="flex-1">
@@ -108,6 +116,45 @@ function CompleteToggle({ isComplete, label, onPress }: CompleteToggleProps) {
   );
 }
 
+type SetEntry = {
+  set: LoggedSet;
+  isComplete: boolean;
+  onEdit: (values: SetValues) => void;
+};
+
+/**
+ * What the lifter has typed into the row, and the write-back of a correction.
+ *
+ * A set already ticked off is history: an edit to it must persist on its own, without
+ * the lifter having to un-tick and re-tick the row.
+ */
+function useSetEntry({ set, isComplete, onEdit }: SetEntry) {
+  const [weight, setWeight] = useState<EnteredWeight>({
+    weightKg: set.weightKg,
+    unit: set.weightUnit,
+  });
+  const [reps, setReps] = useState(set.reps);
+  const saveEdit = useDebouncedCallback(onEdit, EDIT_AUTOSAVE_DELAY_MS);
+
+  const asValues = (entered: EnteredWeight, count: number | null): SetValues => ({
+    weightKg: entered.weightKg,
+    weightUnit: entered.unit,
+    reps: count,
+  });
+
+  function handleWeight(next: EnteredWeight) {
+    setWeight(next);
+    if (isComplete) saveEdit(asValues(next, reps));
+  }
+
+  function handleReps(next: number | null) {
+    setReps(next);
+    if (isComplete) saveEdit(asValues(weight, next));
+  }
+
+  return { weight, values: asValues(weight, reps), handleWeight, handleReps };
+}
+
 export function SetRow({
   set,
   exerciseName,
@@ -117,27 +164,12 @@ export function SetRow({
   onEdit,
   onRemove,
 }: SetRowProps) {
-  const [weightKg, setWeightKg] = useState(set.weightKg);
-  const [reps, setReps] = useState(set.reps);
   const isComplete = set.completedAt !== null;
-
-  // A set already ticked off is history: corrections to it must persist on their own,
-  // without the lifter having to un-tick and re-tick the row.
-  const saveEdit = useDebouncedCallback(onEdit, EDIT_AUTOSAVE_DELAY_MS);
-
-  function handleWeight(next: number | null) {
-    setWeightKg(next);
-    if (isComplete) saveEdit({ weightKg: next, reps });
-  }
-
-  function handleReps(next: number | null) {
-    setReps(next);
-    if (isComplete) saveEdit({ weightKg, reps: next });
-  }
+  const { weight, values, handleWeight, handleReps } = useSetEntry({ set, isComplete, onEdit });
 
   function handleToggle() {
     if (isComplete) return onUncomplete();
-    onComplete({ weightKg, reps });
+    onComplete(values);
   }
 
   return (
@@ -152,7 +184,13 @@ export function SetRow({
       <View
         className={`flex-row items-center gap-2 px-4 py-1.5 ${isComplete ? 'bg-positive/10' : 'bg-surface-raised'}`}>
         <SetLabels position={set.position} previous={previous} />
-        <ValueFields set={set} previous={previous} onWeight={handleWeight} onReps={handleReps} />
+        <ValueFields
+          weight={weight}
+          set={set}
+          previous={previous}
+          onWeight={handleWeight}
+          onReps={handleReps}
+        />
         <CompleteToggle
           isComplete={isComplete}
           label={`${exerciseName}, set ${set.position + 1}`}

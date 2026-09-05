@@ -18,6 +18,7 @@ export function emptyContext(): InsightContext {
     nutrition: [],
     target: null,
     bodyWeightTrend: [],
+    weightUnit: 'kg',
     trainingDays: new Set(),
   };
 }

@@ -13,6 +13,8 @@ import {
   weeklyVolumeQuery,
 } from '@/features/progress/queries';
 
+import { displayUnit } from '@/features/settings/units';
+
 import { buildInsightContext } from './build-context';
 
 const HISTORY_DAYS = 180;
@@ -42,6 +44,7 @@ export function useInsights(): Insight[] {
     nutrition: nutrition.data,
     target: target.data[0] ?? null,
     weighIns: weighIns.data,
+    weightUnit: displayUnit(),
   });
 
   return evaluateInsights(context);

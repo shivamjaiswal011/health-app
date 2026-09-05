@@ -1,4 +1,5 @@
 import { describeChange, MILLISECONDS_PER_DAY } from '@/domain/progress/time-series';
+import { formatWeight, formatWeightChange } from '@/domain/units/weight';
 
 import type { Insight, InsightContext, InsightRule, LiftHistory } from './types';
 
@@ -37,7 +38,7 @@ export const stagnantLift: InsightRule = (context) => {
   return {
     id: `stagnant:${worst.lift.exerciseId}`,
     title: `${worst.lift.name} has stalled`,
-    evidence: `No new best in ${worst.sessions} sessions, still ${Math.round(bestOf(worst.lift.sessions))} kg estimated. A lighter week or a different rep range often restarts it.`,
+    evidence: `No new best in ${worst.sessions} sessions, still ${formatWeight(bestOf(worst.lift.sessions), context.weightUnit)} estimated. A lighter week or a different rep range often restarts it.`,
     tone: 'attention',
   };
 };
@@ -126,7 +127,7 @@ export const recentProgress: InsightRule = (context) => {
     return {
       id: `progress:${lift.exerciseId}`,
       title: `${lift.name} is at its best`,
-      evidence: `${Math.round(latest.value)} kg estimated, up ${Math.round(change.delta)} kg since you started tracking it.`,
+      evidence: `${formatWeight(latest.value, context.weightUnit)} estimated, up ${formatWeightChange(change.delta, context.weightUnit)} since you started tracking it.`,
       tone: 'positive',
     } satisfies Insight;
   }

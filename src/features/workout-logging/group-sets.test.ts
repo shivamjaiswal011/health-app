@@ -3,7 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { groupSetsByExercise } from './group-sets';
 
 function set(id: string, workoutExerciseId: string, position: number) {
-  return { id, workoutExerciseId, position, weightKg: null, reps: null, completedAt: null };
+  return {
+    id,
+    workoutExerciseId,
+    position,
+    weightKg: null,
+    weightUnit: 'kg' as const,
+    reps: null,
+    completedAt: null,
+  };
 }
 
 describe('groupSetsByExercise', () => {

@@ -53,22 +53,25 @@ async function seedSquat() {
   });
 }
 
+type PerformedSet = { weightKg: number; reps: number; weightUnit?: 'kg' | 'lb'; setType?: 'working' | 'backoff' };
+
 /** Logs a complete session of squats and returns the workout id. */
-async function logSquatSession(workoutId: string, performed: [number, number][]) {
+async function logSquatSession(workoutId: string, performed: PerformedSet[]) {
   const entryId = `${workoutId}-entry`;
   await repository.startWorkout({ id: workoutId, name: 'Session', startedAt: new Date() });
   await repository.addExerciseToWorkout({ id: entryId, workoutId, exerciseId: SQUAT, position: 0 });
 
-  for (const [index, [weightKg, reps]] of performed.entries()) {
+  for (const [index, set] of performed.entries()) {
     const setId = `${workoutId}-set-${index}`;
     await repository.addSet({
       id: setId,
       workoutExerciseId: entryId,
       exerciseId: SQUAT,
       position: index,
-      setType: 'working',
+      setType: set.setType ?? 'working',
+      weightUnit: set.weightUnit ?? 'kg',
     });
-    await repository.completeSet(setId, { weightKg, reps });
+    await repository.completeSet(setId, { weightKg: set.weightKg, reps: set.reps });
   }
   return workoutId;
 }
@@ -91,8 +94,8 @@ beforeEach(async () => {
 describe('logging a session', () => {
   it('persists each set as it is completed', async () => {
     await logSquatSession('w1', [
-      [100, 5],
-      [100, 5],
+      { weightKg: 100, reps: 5 },
+      { weightKg: 100, reps: 5 },
     ]);
 
     const logged = await workoutSetsQuery('w1');
@@ -123,7 +126,7 @@ describe('logging a session', () => {
   });
 
   it('writes a change_log row for every mutation', async () => {
-    await logSquatSession('w1', [[100, 5]]);
+    await logSquatSession('w1', [{ weightKg: 100, reps: 5 }]);
 
     const changes = await database.select().from(changeLog);
 
@@ -135,8 +138,8 @@ describe('logging a session', () => {
 
   it('hides a removed set from the session without erasing the row', async () => {
     await logSquatSession('w1', [
-      [100, 5],
-      [100, 5],
+      { weightKg: 100, reps: 5 },
+      { weightKg: 100, reps: 5 },
     ]);
     await repository.removeSet('w1-set-0');
 
@@ -147,7 +150,7 @@ describe('logging a session', () => {
 
 describe('starting a planned workout', () => {
   it('leaves no partial session behind when the plan cannot be written', async () => {
-    const blank = { weightKg: null, reps: null };
+    const blank = { weightKg: null, weightUnit: 'kg' as const, reps: null, setType: 'working' as const };
     const plan = [
       { exerciseId: SQUAT, sets: [blank, blank] },
       { exerciseId: 'catalogue:does-not-exist', sets: [blank, blank] },
@@ -166,35 +169,35 @@ describe('starting a planned workout', () => {
 
 describe('previous performance', () => {
   it('is empty the first time an exercise is trained', async () => {
-    await logSquatSession('w1', [[100, 5]]);
+    await logSquatSession('w1', [{ weightKg: 100, reps: 5 }]);
     expect(await loadPreviousPerformance(SQUAT, 'w1')).toEqual([]);
   });
 
   it('returns the last session, not the one in progress', async () => {
     await logSquatSession('w1', [
-      [100, 5],
-      [105, 5],
+      { weightKg: 100, reps: 5 },
+      { weightKg: 105, reps: 5 },
     ]);
     await repository.finishWorkout('w1');
-    await logSquatSession('w2', [[110, 3]]);
+    await logSquatSession('w2', [{ weightKg: 110, reps: 3 }]);
 
     const previous = await loadPreviousPerformance(SQUAT, 'w2');
 
     expect(previous).toEqual([
-      { position: 0, weightKg: 100, reps: 5 },
-      { position: 1, weightKg: 105, reps: 5 },
+      { position: 0, weightKg: 100, weightUnit: 'kg', reps: 5 },
+      { position: 1, weightKg: 105, weightUnit: 'kg', reps: 5 },
     ]);
   });
 
   it('reaches back only to the most recent session, not all history', async () => {
-    await logSquatSession('w1', [[80, 8]]);
+    await logSquatSession('w1', [{ weightKg: 80, reps: 8 }]);
     await repository.finishWorkout('w1');
-    await logSquatSession('w2', [[90, 6]]);
+    await logSquatSession('w2', [{ weightKg: 90, reps: 6 }]);
     await repository.finishWorkout('w2');
 
     const previous = await loadPreviousPerformance(SQUAT, 'w3');
 
-    expect(previous).toEqual([{ position: 0, weightKg: 90, reps: 6 }]);
+    expect(previous).toEqual([{ position: 0, weightKg: 90, weightUnit: 'kg', reps: 6 }]);
   });
 
   it('ignores sets that were never completed', async () => {
@@ -218,25 +221,51 @@ describe('previous performance', () => {
   });
 
   it('ignores an exercise removed from an otherwise kept session', async () => {
-    await logSquatSession('w1', [[100, 5]]);
+    await logSquatSession('w1', [{ weightKg: 100, reps: 5 }]);
     await repository.finishWorkout('w1');
-    await logSquatSession('w2', [[200, 1]]);
+    await logSquatSession('w2', [{ weightKg: 200, reps: 1 }]);
     await repository.finishWorkout('w2');
     await repository.removeWorkoutExercise('w2-entry');
 
     const previous = await loadPreviousPerformance(SQUAT, 'w3');
 
-    expect(previous).toEqual([{ position: 0, weightKg: 100, reps: 5 }]);
+    expect(previous).toEqual([{ position: 0, weightKg: 100, weightUnit: 'kg', reps: 5 }]);
+  });
+
+  it('reports each set in the unit it was entered in', async () => {
+    await logSquatSession('w1', [
+      { weightKg: 100, reps: 5 },
+      { weightKg: 61.235, reps: 5, weightUnit: 'lb' },
+    ]);
+    await repository.finishWorkout('w1');
+
+    const previous = await loadPreviousPerformance(SQUAT, 'w2');
+
+    expect(previous.map((set) => set.weightUnit)).toEqual(['kg', 'lb']);
+  });
+
+  it('excludes a back-off set, which is lighter and higher-rep than the work', async () => {
+    await logSquatSession('w1', [
+      { weightKg: 100, reps: 8 },
+      { weightKg: 80, reps: 12, setType: 'backoff' },
+    ]);
+    await repository.finishWorkout('w1');
+
+    // Letting the back-off row through would ghost 80 kg behind the second working set
+    // and hand challenge mode twelve reps the lifter never did at the working weight.
+    const previous = await loadPreviousPerformance(SQUAT, 'w2');
+
+    expect(previous).toEqual([{ position: 0, weightKg: 100, weightUnit: 'kg', reps: 8 }]);
   });
 
   it('ignores a discarded session', async () => {
-    await logSquatSession('w1', [[100, 5]]);
+    await logSquatSession('w1', [{ weightKg: 100, reps: 5 }]);
     await repository.finishWorkout('w1');
-    await logSquatSession('w2', [[200, 1]]);
+    await logSquatSession('w2', [{ weightKg: 200, reps: 1 }]);
     await repository.discardWorkout('w2');
 
     const previous = await loadPreviousPerformance(SQUAT, 'w3');
 
-    expect(previous).toEqual([{ position: 0, weightKg: 100, reps: 5 }]);
+    expect(previous).toEqual([{ position: 0, weightKg: 100, weightUnit: 'kg', reps: 5 }]);
   });
 });

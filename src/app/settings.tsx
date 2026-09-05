@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 
+import { WEIGHT_UNITS, type WeightUnit } from '@/domain/units/weight';
 import { shareBackup } from '@/features/backup/share-backup';
 import {
   cancelDailyReminder,
@@ -10,6 +11,12 @@ import {
   requestReminderPermission,
   scheduleDailyReminder,
 } from '@/features/reminders/schedule';
+import {
+  bodyweightUnit,
+  displayUnit,
+  setBodyweightUnit,
+  setDisplayUnit,
+} from '@/features/settings/units';
 import { announceFailure, reportFailure } from '@/ui/failure';
 import { Screen } from '@/ui/screen';
 import { ScreenHeader } from '@/ui/screen-header';
@@ -31,6 +38,61 @@ function SettingRow({
       </View>
       {children}
     </View>
+  );
+}
+
+/** A two-way segmented picker. Both units are always visible, so neither is hidden behind a tap. */
+function UnitPicker({ value, onChange }: { value: WeightUnit; onChange: (u: WeightUnit) => void }) {
+  return (
+    <View className="flex-row gap-1 rounded-xl bg-surface-sunken p-1">
+      {WEIGHT_UNITS.map((unit) => (
+        <Pressable
+          key={unit}
+          onPress={() => onChange(unit)}
+          accessibilityRole="radio"
+          accessibilityState={{ selected: unit === value }}
+          accessibilityLabel={unit}
+          className={`h-9 w-12 items-center justify-center rounded-lg ${unit === value ? 'bg-surface-raised' : ''}`}>
+          <Text
+            className={`text-[15px] ${unit === value ? 'font-semibold text-content' : 'text-content-muted'}`}>
+            {unit}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Totals, charts and records read in one unit, chosen here. It is a display choice
+ * only: individual sets keep whatever unit they were logged in, so a leg press marked
+ * in pounds still reads in pounds while the weekly tonnage adds up in kilograms.
+ */
+function UnitSettings() {
+  const [display, setDisplay] = useState(displayUnit);
+  const [bodyweight, setBodyweight] = useState(bodyweightUnit);
+
+  function chooseDisplay(unit: WeightUnit) {
+    setDisplayUnit(unit);
+    setDisplay(unit);
+  }
+
+  function chooseBodyweight(unit: WeightUnit) {
+    setBodyweightUnit(unit);
+    setBodyweight(unit);
+  }
+
+  return (
+    <>
+      <SettingRow
+        title="Weight units"
+        detail="Used for totals, charts and records. Each set still shows the unit you typed it in.">
+        <UnitPicker value={display} onChange={chooseDisplay} />
+      </SettingRow>
+      <SettingRow title="Bodyweight" detail="Whatever your bathroom scale reads.">
+        <UnitPicker value={bodyweight} onChange={chooseBodyweight} />
+      </SettingRow>
+    </>
   );
 }
 
@@ -98,6 +160,7 @@ export default function SettingsScreen() {
       <ScreenHeader left={{ label: 'Back', onPress: () => router.back(), tone: 'muted' }} />
       <Text className="px-5 pb-3 text-3xl font-bold text-content">Settings</Text>
       <ScrollView contentContainerClassName="px-5 pb-10">
+        <UnitSettings />
         <ReminderSetting />
         <BackupSetting />
         <SettingRow

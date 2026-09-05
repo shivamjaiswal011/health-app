@@ -1,4 +1,5 @@
 import { describeChange } from '@/domain/progress/time-series';
+import { formatWeightChange } from '@/domain/units/weight';
 
 import type { DayNutrition, InsightRule } from './types';
 
@@ -117,7 +118,7 @@ export const weightVersusIntake: InsightRule = (context) => {
   return {
     id: 'weight-versus-intake',
     title: `You are ${direction} on ${Math.round(eaten)} kcal a day`,
-    evidence: `Trend weight moved ${change.delta > 0 ? '+' : ''}${change.delta.toFixed(1)} kg while you logged ${Math.round(eaten)} kcal daily${intake}. The scale is the measurement; the logging is the estimate.`,
+    evidence: `Trend weight moved ${formatWeightChange(change.delta, context.weightUnit)} while you logged ${Math.round(eaten)} kcal daily${intake}. The scale is the measurement; the logging is the estimate.`,
     tone: 'neutral',
   };
 };

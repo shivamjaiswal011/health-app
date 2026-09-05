@@ -9,6 +9,8 @@ import { trainedExercisesQuery, weeklyVolumeQuery } from '@/features/progress/qu
 import { ListRow } from '@/ui/list-row';
 import { Screen } from '@/ui/screen';
 import { useThemeColor } from '@/ui/use-theme-color';
+import { formatWeightTotal } from '@/domain/units/weight';
+import { displayUnit } from '@/features/settings/units';
 
 function VolumeCard() {
   const weeks = useLiveQuery(weeklyVolumeQuery());
@@ -27,7 +29,7 @@ function VolumeCard() {
       ) : (
         <>
           <Text className="text-xs text-content-muted">
-            {Math.round(latest.volume).toLocaleString()} kg this week · {latest.setCount} sets
+            {formatWeightTotal(latest.volume, displayUnit())} this week · {latest.setCount} sets
           </Text>
           <VolumeChart weeks={chronological} color={accent} />
         </>

@@ -1,6 +1,7 @@
 import { toCalendarDay } from '@/domain/nutrition/calendar-day';
 import { rollingAverage, MILLISECONDS_PER_DAY } from '@/domain/progress/time-series';
 import { bestOneRepMaxByDay } from '@/domain/training/strength-series';
+import type { WeightUnit } from '@/domain/units/weight';
 import type {
   DayNutrition,
   InsightContext,
@@ -72,6 +73,7 @@ export type ContextSources = {
   nutrition: DayNutrition[];
   target: NutritionTarget | null;
   weighIns: { measuredOn: string; weightKg: number | null }[];
+  weightUnit: WeightUnit;
 };
 
 /**
@@ -97,5 +99,6 @@ export function buildInsightContext(sources: ContextSources): InsightContext {
     target: sources.target,
     bodyWeightTrend: rollingAverage(weighIns, WEIGHT_TREND_WINDOW_DAYS),
     trainingDays: trainingDaysOf(sources.completedSets),
+    weightUnit: sources.weightUnit,
   };
 }

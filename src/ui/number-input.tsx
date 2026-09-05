@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { TextInput } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { TextInput, View } from 'react-native';
 
 const DECIMAL_ENTRY = /^\d*\.?\d*$/;
 
@@ -7,6 +7,8 @@ type NumberInputProps = {
   defaultValue: number | null;
   onChangeValue: (value: number | null) => void;
   placeholder?: string;
+  /** Rendered against the right edge, with room reserved so the value clears it. */
+  accessory?: ReactNode;
 };
 
 function parseEntry(text: string): number | null {
@@ -21,7 +23,12 @@ function parseEntry(text: string): number | null {
  * until the user finishes. To reset it — starting a new set — remount it with a
  * different React `key` rather than pushing a new value in.
  */
-export function NumberInput({ defaultValue, onChangeValue, placeholder }: NumberInputProps) {
+export function NumberInput({
+  defaultValue,
+  onChangeValue,
+  placeholder,
+  accessory,
+}: NumberInputProps) {
   const [text, setText] = useState(() => (defaultValue === null ? '' : String(defaultValue)));
 
   function handleChangeText(next: string) {
@@ -31,13 +38,16 @@ export function NumberInput({ defaultValue, onChangeValue, placeholder }: Number
   }
 
   return (
-    <TextInput
-      value={text}
-      onChangeText={handleChangeText}
-      placeholder={placeholder}
-      keyboardType="decimal-pad"
-      selectTextOnFocus
-      className="h-11 rounded-xl bg-surface-sunken px-2 text-center text-[17px] font-semibold text-content"
-    />
+    <View className="relative">
+      <TextInput
+        value={text}
+        onChangeText={handleChangeText}
+        placeholder={placeholder}
+        keyboardType="decimal-pad"
+        selectTextOnFocus
+        className={`h-11 rounded-xl bg-surface-sunken text-center text-[17px] font-semibold text-content ${accessory ? 'pl-9 pr-9' : 'px-2'}`}
+      />
+      {accessory}
+    </View>
   );
 }

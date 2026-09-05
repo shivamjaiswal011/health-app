@@ -2,6 +2,9 @@ import { and, asc, count, desc, eq, isNotNull, isNull, ne } from 'drizzle-orm';
 
 import { database } from '@/db/client';
 import { exercises, sets, workoutExercises, workouts } from '@/db/schema';
+import type { PreviousSet } from '@/domain/training/prefill';
+
+export type { PreviousSet };
 
 /** The single unfinished session, if one exists. Live-queried by the logger. */
 export function activeWorkoutQuery() {
@@ -44,6 +47,7 @@ export function workoutSetsQuery(workoutId: string) {
       position: sets.position,
       setType: sets.setType,
       weightKg: sets.weightKg,
+      weightUnit: sets.weightUnit,
       reps: sets.reps,
       completedAt: sets.completedAt,
     })
@@ -97,21 +101,20 @@ export function workoutHistoryQuery() {
     .limit(HISTORY_PAGE_SIZE);
 }
 
-export type PreviousSet = {
-  position: number;
-  weightKg: number | null;
-  reps: number | null;
-};
-
 /**
  * A set only counts as history when nothing above it has been deleted. Discarding a
  * workout tombstones the workout row alone, so its sets remain individually alive —
  * the parent's tombstone has to be checked explicitly or a discarded session keeps
  * supplying ghost values.
+ *
+ * Only working sets count. A back-off set is deliberately light and high-rep, so
+ * letting one through would both ghost the wrong numbers and hand challenge mode a
+ * rep count that clears a target the lifter never actually reached.
  */
-const liveCompletedSet = (exerciseId: string) =>
+const liveCompletedWorkingSet = (exerciseId: string) =>
   and(
     eq(sets.exerciseId, exerciseId),
+    eq(sets.setType, 'working'),
     isNotNull(sets.completedAt),
     isNull(sets.deletedAt),
     isNull(workoutExercises.deletedAt),
@@ -124,7 +127,7 @@ async function findLastWorkoutTraining(exerciseId: string, excludingWorkoutId: s
     .from(sets)
     .innerJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
     .innerJoin(workouts, eq(workoutExercises.workoutId, workouts.id))
-    .where(and(liveCompletedSet(exerciseId), ne(workoutExercises.workoutId, excludingWorkoutId)))
+    .where(and(liveCompletedWorkingSet(exerciseId), ne(workoutExercises.workoutId, excludingWorkoutId)))
     .orderBy(desc(sets.completedAt))
     .limit(1);
   return latest?.workoutId ?? null;
@@ -145,10 +148,15 @@ export async function loadPreviousPerformance(
   if (previousWorkoutId === null) return [];
 
   return database
-    .select({ position: sets.position, weightKg: sets.weightKg, reps: sets.reps })
+    .select({
+      position: sets.position,
+      weightKg: sets.weightKg,
+      weightUnit: sets.weightUnit,
+      reps: sets.reps,
+    })
     .from(sets)
     .innerJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
     .innerJoin(workouts, eq(workoutExercises.workoutId, workouts.id))
-    .where(and(liveCompletedSet(exerciseId), eq(workoutExercises.workoutId, previousWorkoutId)))
+    .where(and(liveCompletedWorkingSet(exerciseId), eq(workoutExercises.workoutId, previousWorkoutId)))
     .orderBy(asc(sets.position));
 }

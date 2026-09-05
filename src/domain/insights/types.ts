@@ -1,5 +1,6 @@
 import type { CalendarDay } from '@/domain/nutrition/calendar-day';
 import type { SeriesPoint } from '@/domain/progress/time-series';
+import type { WeightUnit } from '@/domain/units/weight';
 
 /**
  * How an insight should read, not how alarming it is. `attention` is the strongest
@@ -63,6 +64,12 @@ export type InsightContext = {
   bodyWeightTrend: SeriesPoint[];
   /** Days on which any set was completed. */
   trainingDays: Set<CalendarDay>;
+  /**
+   * How to write weights in the evidence. Rules still reason in kilograms — this is a
+   * formatting choice, and letting it into the arithmetic would make the thresholds
+   * mean different things in different units.
+   */
+  weightUnit: WeightUnit;
 };
 
 export type InsightRule = (context: InsightContext) => Insight | null;

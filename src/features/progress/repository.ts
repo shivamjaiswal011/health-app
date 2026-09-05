@@ -3,6 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { database } from '@/db/client';
 import { logChange, withTimestamps } from '@/db/mutation';
 import { bodyMetrics } from '@/db/schema';
+import type { WeightUnit } from '@/domain/units/weight';
 
 const BODY_METRICS = 'body_metrics';
 
@@ -10,6 +11,7 @@ export type NewBodyWeight = {
   id: string;
   measuredOn: string;
   weightKg: number;
+  weightUnit: WeightUnit;
 };
 
 /**

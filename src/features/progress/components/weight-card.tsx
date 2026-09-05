@@ -11,6 +11,8 @@ import {
   rollingAverage,
   type SeriesPoint,
 } from '@/domain/progress/time-series';
+import { formatWeight, formatWeightChange, toKilograms } from '@/domain/units/weight';
+import { bodyweightUnit } from '@/features/settings/units';
 import { Button } from '@/ui/button';
 import { announceFailure } from '@/ui/failure';
 import { NumberInput } from '@/ui/number-input';
@@ -23,12 +25,18 @@ import { TrendChart } from './trend-chart';
 
 const TREND_WINDOW_DAYS = 7;
 
+/**
+ * A weigh-in is entered in whatever the bathroom scale reads, set once in Settings —
+ * unlike a lift, a scale does not change unit between one weigh-in and the next.
+ */
 function LogWeightSheet({ visible, onDismiss }: { visible: boolean; onDismiss: () => void }) {
-  const [weightKg, setWeightKg] = useState<number | null>(null);
+  const [entered, setEntered] = useState<number | null>(null);
+  const unit = bodyweightUnit();
 
   function handleSave() {
-    if (!weightKg) return;
-    recordBodyWeight({ id: newId(), measuredOn: today(), weightKg })
+    if (!entered) return;
+    const weighIn = { id: newId(), measuredOn: today(), weightKg: toKilograms(entered, unit) };
+    recordBodyWeight({ ...weighIn, weightUnit: unit })
       .then(onDismiss)
       .catch((cause) => announceFailure('Saving your weight', cause));
   }
@@ -37,11 +45,11 @@ function LogWeightSheet({ visible, onDismiss }: { visible: boolean; onDismiss: (
     <Sheet visible={visible} onDismiss={onDismiss} title="Log weight">
       <View className="flex-row items-center gap-3 pb-4">
         <View className="w-28">
-          <NumberInput defaultValue={null} onChangeValue={setWeightKg} placeholder="kg" />
+          <NumberInput defaultValue={null} onChangeValue={setEntered} placeholder={unit} />
         </View>
-        <Text className="text-sm text-content-faint">kilograms, today</Text>
+        <Text className="text-sm text-content-faint">{unit}, today</Text>
       </View>
-      <Button label="Save weight" onPress={handleSave} disabled={!weightKg} />
+      <Button label="Save weight" onPress={handleSave} disabled={!entered} />
     </Sheet>
   );
 }
@@ -50,11 +58,11 @@ function ChangeSummary({ trend }: { trend: SeriesPoint[] }) {
   const change = describeChange(trend);
   if (!change) return null;
 
-  const gained = change.delta > 0;
+  const unit = bodyweightUnit();
   return (
     <Text className="text-xs text-content-muted">
-      {change.last.toFixed(1)} kg now · {gained ? '+' : ''}
-      {change.delta.toFixed(1)} kg over this range
+      {formatWeight(change.last, unit)} now · {formatWeightChange(change.delta, unit)} over this
+      range
     </Text>
   );
 }

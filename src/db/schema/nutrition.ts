@@ -1,5 +1,7 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
+import { WEIGHT_UNITS } from '@/domain/units/weight';
+
 import { syncColumns } from './shared';
 
 /**
@@ -140,6 +142,7 @@ export const bodyMetrics = sqliteTable(
     ...syncColumns,
     measuredOn: text('measured_on').notNull(),
     weightKg: real('weight_kg'),
+    weightUnit: text('weight_unit', { enum: WEIGHT_UNITS }).notNull().default('kg'),
     bodyFatPercent: real('body_fat_percent'),
     notes: text('notes'),
   },
