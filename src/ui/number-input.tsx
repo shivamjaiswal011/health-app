@@ -7,7 +7,10 @@ type NumberInputProps = {
   defaultValue: number | null;
   onChangeValue: (value: number | null) => void;
   placeholder?: string;
-  /** Rendered against the right edge, with room reserved so the value clears it. */
+  /**
+   * Rendered against the right edge. Only that side is padded — reserving both would
+   * leave a narrow column too little room for the value, which then clips silently.
+   */
   accessory?: ReactNode;
 };
 
@@ -45,7 +48,7 @@ export function NumberInput({
         placeholder={placeholder}
         keyboardType="decimal-pad"
         selectTextOnFocus
-        className={`h-11 rounded-xl bg-surface-sunken text-center text-[17px] font-semibold text-content ${accessory ? 'pl-9 pr-9' : 'px-2'}`}
+        className={`h-11 rounded-xl bg-surface-sunken text-center text-[17px] font-semibold text-content ${accessory ? 'pl-1.5 pr-8' : 'px-2'}`}
       />
       {accessory}
     </View>

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
+import type { SetType } from '@/db/schema';
 import { formatWeight, type WeightUnit } from '@/domain/units/weight';
 import { NumberInput } from '@/ui/number-input';
 import { useDebouncedCallback } from '@/ui/use-debounced-callback';
@@ -17,6 +18,7 @@ const EDIT_AUTOSAVE_DELAY_MS = 600;
 export type LoggedSet = {
   id: string;
   position: number;
+  setType: SetType;
   weightKg: number | null;
   weightUnit: WeightUnit;
   reps: number | null;
@@ -57,13 +59,21 @@ function RemoveAction({ label, onRemove }: { label: string; onRemove: () => void
   );
 }
 
-function SetLabels({ position, previous }: { position: number; previous?: PreviousSet }) {
+/**
+ * A back-off set is deliberately lighter than the work above it, so it says so. Left
+ * looking like another working set, its lower weight reads as a mistake.
+ */
+function SetLabels({ set, previous }: { set: LoggedSet; previous?: PreviousSet }) {
+  const isBackoff = set.setType === 'backoff';
+
   return (
     <>
       <Text className="w-6 text-center text-sm font-semibold text-content-muted">
-        {position + 1}
+        {isBackoff ? 'B' : set.position + 1}
       </Text>
-      <Text className="w-24 text-center text-xs text-content-faint">{previousLabel(previous)}</Text>
+      <Text className="w-24 text-center text-xs text-content-faint">
+        {isBackoff ? 'back-off' : previousLabel(previous)}
+      </Text>
     </>
   );
 }
@@ -183,7 +193,7 @@ export function SetRow({
       overshootRight={false}>
       <View
         className={`flex-row items-center gap-2 px-4 py-1.5 ${isComplete ? 'bg-positive/10' : 'bg-surface-raised'}`}>
-        <SetLabels position={set.position} previous={previous} />
+        <SetLabels set={set} previous={previous} />
         <ValueFields
           weight={weight}
           set={set}

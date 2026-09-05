@@ -62,6 +62,7 @@ export default function ChallengeScreen() {
           <ListRow
             title="Challenge mode"
             detail="Sets open at a target to beat instead of last session's numbers."
+            detailLines={2}
             showChevron={false}
             isLast={!enabled}
             trailing={<Switch value={enabled} onValueChange={toggleEnabled} />}
@@ -70,6 +71,7 @@ export default function ChallengeScreen() {
             <ListRow
               title="Back-off set"
               detail="One extra set after the work, four more reps at 20% lighter."
+              detailLines={2}
               showChevron={false}
               isLast
               trailing={<Switch value={settings.backoffSets} onValueChange={toggleBackoff} />}

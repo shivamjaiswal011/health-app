@@ -18,6 +18,7 @@ export function ListRow({
   trailing,
   showChevron = true,
   isLast = false,
+  detailLines = 1,
 }: {
   title: string;
   detail?: string;
@@ -25,6 +26,8 @@ export function ListRow({
   trailing?: ReactNode;
   showChevron?: boolean;
   isLast?: boolean;
+  /** Raise it where the detail carries the meaning rather than just labelling the row. */
+  detailLines?: number;
 }) {
   const faint = useThemeColor('contentFaint');
 
@@ -40,7 +43,9 @@ export function ListRow({
           {title}
         </Text>
         {detail ? (
-          <Text className="mt-0.5 text-[13px] leading-4 text-content-muted" numberOfLines={1}>
+          <Text
+            className="mt-0.5 text-[13px] leading-4 text-content-muted"
+            numberOfLines={detailLines}>
             {detail}
           </Text>
         ) : null}

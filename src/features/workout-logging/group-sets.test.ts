@@ -9,6 +9,7 @@ function set(id: string, workoutExerciseId: string, position: number) {
     position,
     weightKg: null,
     weightUnit: 'kg' as const,
+    setType: 'working' as const,
     reps: null,
     completedAt: null,
   };
